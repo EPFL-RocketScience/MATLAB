@@ -4,7 +4,6 @@ classdef RocketGeometry < handle
     properties (SetAccess = public, GetAccess = public)
         CONE    % conical (0) or ogive (1)
         LN      % nose length
-        alpha   % nose tip angle
         LB      % body length
         LT      % tail length
         DT      % rear tail diameter
