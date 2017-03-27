@@ -1,0 +1,11 @@
+clear all
+close all
+
+RG = RocketGeometry();
+RG.setGeometryFromFile('CoDESIGN_TABLE_ROCKET_V_2.txt');
+RG.NF = 3;
+
+RA = RocketAero(RG);
+RA.update();
+
+RA.x_CP

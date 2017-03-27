@@ -1,0 +1,15 @@
+fins_in_length (mm)	300
+fins_out_length (mm)	86
+fins_front_angle (deg)	30
+fins_back_angle (deg)	62
+fins_thickness (mm)	6.35
+fins_number	3
+fins_position (mm)	17
+tube_diameter (mm)	102
+tube_length (mm)	1272
+tube_thickness (mm)	2
+back_length (mm)	15
+back_outflow_diameter (mm)	92
+nose_length (mm)	415
+
+
