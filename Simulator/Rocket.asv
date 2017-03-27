@@ -83,10 +83,10 @@ classdef Rocket < handle
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
-            %   - z     :   position du haut de la payload
-            %   - m     :   masse
-            %   - L     :   longueur de la payload
-            %   - D     :   diametre de la paylaod
+            %   - z     :
+            %   - m     :
+            %   - L     :
+            %   - D     :
             
             % Assignation des proprietes
             obj.Payload.z = z;
@@ -130,7 +130,7 @@ classdef Rocket < handle
             obj.Fins.rho = rho;
             
             % Calcule des proprietes de masse
-            obj.Fins.h = (b-a)/(1/tan(gamma)+1/tan(phi)); 
+            obj.Fins.h = (b - a)/(1/tan(gamma)+1/tan(phi)); 
             obj.Fins.cm = (h/3)*(2*a+b)/(a+b);
             obj.Fins.m = rho*N*(1/2)*(a+b)*h*e;
         end
