@@ -37,7 +37,7 @@ classdef RocketMass < handle
         end
         
         % CG calculator
-        function computeValues(obj)
+        function update(obj)
             obj.TotalMass = 0;
             relativeMassX = 0;
             relativeMassR = 0;

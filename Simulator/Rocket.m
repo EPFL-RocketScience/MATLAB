@@ -24,22 +24,22 @@ classdef Rocket < handle
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
-            %   - L     :
-            %   - D     :
-            %   - z     :
-            %   - e     :
-            %   - rho   :
-            %   - type  :
+            %   - L     :   longueur du cone
+            %   - D     :   Diamètre de la base du cone
+            %   - e     :   epaisseur du cone
+            %   - rho   :   densite
+            %   - type  :   cone ou ogive
             
             % Assignation des proprietes
             obj.Nose.L = L;
             obj.Nose.D = D;
-            obj.Nose.z = z;
+            obj.Nose.e = e;
             obj.Nose.rho = rho;
             obj.Nose.type = type;
             
             % Calcule des proprietes de masse
-            obj.Nose.m = 0;
+            obj.Nose.m = rho*pi/3*(((D/2)^2*L)-(((D/2)-e)^2*(L-e)));
+            obj.Nose.cm = 3*L/4;
             obj.Nose.Iz = 0;
             obj.Nose.Ir = 0;
             
@@ -48,19 +48,54 @@ classdef Rocket < handle
             obj.Nose.zCP = 0; % position du centre de pression relatif au haut du cone
         end
         
-        function tail(obj, z, L, e, D1, D2, rho)
-            % D1 : diametre du haut
-            % D2 : diametre du bas
+        function tail(obj, D1, D2, L, e, z, rho)
+            % INPUTS
+            % D1 :  diametre du haut
+            % D2 :  diametre du bas
+            % L :   longueur du tail
+            % e :   epaisseur de paroie
+            % z :   postion par rapport au haut de la fusée du haut du tail
+            % rho : densite
+            
+            % Assignation des proprietes
+            obj.Tail.D1 = D1;
+            obj.Tail.D2 = D2;
+            obj.Tail.L = L;
+            obj.Tail.z = z;
+            obj.Tail.rho = rho;
+            obj.Tail.type = type;
+            
+            % Calcule des proprietes de masse
+            obj.Tail.m = 0;
+            obj.Tail.cm = 0;
+            obj.Tail.Iz = 0;
+            obj.Tail.Ir = 0;
+            
+            % Calcule des proprietes aerodynamiques
+            obj.Tail.CN = 0; % coefficient aerodynamique normal
+            obj.Tail.zCP = 0; % position du centre de pression relatif au haut du cone
+            
+            
         end
         
         function stage(obj, id, z, L, Din, Dout, rho)
+            % Assignation des proprietes
             tmpStage.id = id; % 
             tmpStage.L = L;
             tmpStage.Din = Din;
             tmpStage.Dout= Dout;
             tmpStage.rho = rho;
             
+            % Calcule des proprietes de masse
+            %probleme au niveau de l atribution aux differents etages
+            obj.tmpStage.m = 0;
+            obj.tmpStage.cm = 1*L/2;
+            obj.tmpStage.Iz = 0;
+            obj.tmpStage.Ir = 0;
             
+            % Calcule des proprietes aerodynamiques ??? pas de propr. non ?
+            obj.Nose.CN = 0; % coefficient aerodynamique normal
+            obj.Nose.zCP = 0;
             
             obj.Stage = [obj.Stage tmpStage];
         end
@@ -78,21 +113,113 @@ classdef Rocket < handle
         end
         
         function payload(obj, z, m, L, D)
-        
+            % payload
+            % Calcule la masse, le centre de masse, le centre de pression,
+            % le coefficient aerodynamique, les moments d'inertie
+            % INPUTS
+            %   - z     :   position du haut de la payload
+            %   - m     :   masse
+            %   - L     :   longueur de la payload
+            %   - D     :   diametre de la paylaod
+            
+            % Assignation des proprietes
+            obj.Payload.z = z;
+            obj.Payload.m = m;
+            obj.Payload.L = L;
+            obj.Payload.D = D;
+            
+            % Calcule des proprietes de masse
+            obj.Payload.m = m;
+            obj.Payload.cm = (1/2)*L;
+            obj.Payload.Iz = 0;
+            obj.Payload.Ir = 0;
         end
         
-        function parachute(obj, z, m, L, D)
+        function parachute(obj, z, m, L, D, V)
+            % parachutee
+            % Calcule la masse, le centre de masse, le centre de pression,
+            % le coefficient aerodynamique, les moments d'inertie
+            % INPUTS
+            %   - z     :   emplacement du parachute
+            %   - m     :   masse du parachute
+            %   - L     :   longueur des files
+            %   - D     :   diamètre du parachute ouvert
+            %   - V     :   vitesse de descente en m/s
             
+            % Assignation des proprietes
+            obj.Parachute.z = z;
+            obj.Parachute.m = m;
+            obj.Parachute.L = L;
+            obj.Parachute.D = D;
+            obj.Parachute.V = V;      
+            
+            % Calcule des proprietes de masse
+            obj.Parachute.m = rho*pi/3*(((D/2)^2*L)-(((D/2)-e)^2*(L-e)));
+            obj.Parachute.cm = z;%car masse ponctuelle
+            obj.Parachute.Iz = 0;
+            obj.Parachute.Ir = 0;
+            
+        end
+        
+        function fins(obj, z, N, a, b, gamma, phi, e, rho)
+            % fins
+            % Calcule la masse, le centre de masse, le centre de pression,
+            % le coefficient aerodynamique, les moments d'inertie
+            % INPUTS
+            %   - z     :   position du haut de la fins
+            %   - N     :   nombre de fins
+            %   - a     :   longueur de la petite base
+            %   - b     :   longueur de la grande base
+            %   - gamma :   angle à l'avant de la fins
+            %   - phi   :   angle à l'arrière de la fins
+            %   - e     :   epaisseur de la fins
+            %   - rho   :   densite 
+           
+            % Assignation des proprietes
+            obj.Fins.z = z;
+            obj.Fins.N = N;
+            obj.Fins.a = a;
+            obj.Fins.b = b;
+            obj.Fins.gamma = gamma;
+            obj.Fins.phi = phi;
+            obj.Fins.e = e;
+            obj.Fins.rho = rho;
+            
+            % Calcule des proprietes de masse
+            obj.Fins.h = (b-a)/(1/tan(gamma)+1/tan(phi)); 
+            obj.Fins.cm = (h/3)*(2*a+b)/(a+b);
+            obj.Fins.m = rho*N*(1/2)*(a+b)*h*e;
+            obj.Fins.Iz = 0;
+            obj.Fins.Ir = 0;
+                   
+            % Calcule des proprietes aerodynamiques
+            obj.Fins.CN = 0; % coefficient aerodynamique normal
+            obj.Fins.zCP = 0; % position du centre de pression relatif SUR LE FINS
         end
         
         function point(obj, z, m)
-        
+            % point materiel
+            % Calcule la masse, le centre de masse, les moments d'inertie
+            % INPUTS
+            %   - z     :   position de la masse
+            %   - m     :   masse (i.e. equilibrage, déplacememtn centre de
+            %   gravite)
+            
+            % Assignation des proprietes
+            obj.Point.z = z;
+            obj.Point.m = m;
+            
+            % Calcule des proprietes de masse
+            obj.Point.cm = 0;
+            obj.Point.Iz = 0;
+            obj.Point.Ir = 0;
+            
         end
         
         function getDataFromFile(obj, path)
-            CADFILE = importdata(filepath);
+            CADFILE = importdata(path);
             
-            LN  = CADFILE.data(14)  ;    %length of nose  
+            LN  = CADFILE.data(13)  ;    %length of nose  
             D  = CADFILE.data(9)   ; %diameter at base of nose  
             LB = CADFILE.data(10)    ; %length of Body tube 
             DT  =  CADFILE.data(13)   ;  %diameter at rear of transition  

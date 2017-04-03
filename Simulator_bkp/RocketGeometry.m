@@ -33,19 +33,19 @@ classdef RocketGeometry < handle
             
             CADFILE = importdata(filepath);
             
-            obj.LN  = CADFILE.data(14)  ;    %length of nose  
-            obj.D  = CADFILE.data(9)   ; %diameter at base of nose  
-            obj.LB = CADFILE.data(10)    ; %length of Body tube 
-            obj.DT  =  CADFILE.data(13)   ;  %diameter at rear of transition  
-            obj.LT  = CADFILE.data(12)    ;%length of transition  
-            obj.XT  =  CADFILE.data(10)+obj.LN  ;   %distance from tip of nose to front of transition (=tube lenght + nose as transition at the end) 
+            obj.LN  = CADFILE.data(13)  ;    %length of nose  
+            obj.D  = CADFILE.data(8)   ; %diameter at base of nose  
+            obj.LB = CADFILE.data(9)    ; %length of Body tube 
+            obj.DT  =  CADFILE.data(12)   ;  %diameter at rear of transition  
+            obj.LT  = CADFILE.data(11)    ;%length of transition  
+            obj.XT  =  CADFILE.data(9)+obj.LN  ;   %distance from tip of nose to front of transition (=tube lenght + nose as transition at the end) 
             obj.CR  =  CADFILE.data(1)    ; %fins root chord  
             obj.CT  =  CADFILE.data(2) ;    %fins tip chord  
             obj.S  =  (obj.CR-obj.CT)/(1/tand(CADFILE.data(4))+1/tand(CADFILE.data(3)))   ;%fins semispan  
             obj.LF  =  (obj.S^2+(obj.CR/2-obj.CT/2-obj.S*tand(CADFILE.data(3)))^2)^.5  ;   %length of fin mid-chord line  
             obj.XRT  = obj.S/tand(CADFILE.data(3))     ; %distance between fin root leading edge and fin tip leading edge parallel to body  
-            obj.XF  = obj.XT-obj.CR-CADFILE.data(8)     ;%distance from nose tip to fin root chord leading edge  
-            obj.NF  = CADFILE.data(6)      ;%number of fins  
+            obj.XF  = obj.XT-obj.CR-CADFILE.data(7)     ;%distance from nose tip to fin root chord leading edge  
+            obj.NF  = CADFILE.data(5)      ;%number of fins  
         end
         
         function setGeometry(obj, LN, D, LB, DT, LT, XT, CR, CT, S, LF, XRT, XF, NF)
