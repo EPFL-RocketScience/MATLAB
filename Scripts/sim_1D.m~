@@ -3,9 +3,9 @@ clear all
 close all
 
 % System variables
-Cd = 0.51;       % estimated drag coefficient
+Cd = 0.6;       % estimated drag coefficient
 mi = 2.294;        % initial mass [kg]
-mp = 0.309-0.161;     % propellant mass
+mp = 0.2;     % propellant mass
 mf = mi-mp;     % final mass
 bt = 1.48;        % burn time [s]
 S = pi*(4*0.0247)^2/4;   % exposed section [m^2]
@@ -14,9 +14,9 @@ S = pi*(4*0.0247)^2/4;   % exposed section [m^2]
 tSpan = [0, 20];
 x0 = [1401;0];
 
-data = load('Thrust_Curves/Aerotech_H148R.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
-%Tdat = data.Tdat;
-Tdat = data.data;
+data = load('Thrust_Curves/Aerotech_H148.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
+Tdat = data.Tdat;
+
 % Add values to thrust curve at initial time and final time 
 Tdat = [0, Tdat(1,2); Tdat; bt+0.1, 0; tSpan(2), 0];
 
