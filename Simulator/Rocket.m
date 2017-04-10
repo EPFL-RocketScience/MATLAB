@@ -80,9 +80,13 @@ classdef Rocket < handle
             % Calcule des proprietes de masse
             %on utilise un cone - un plus petit cone
             obj.Tail.m = rho*(vTot-vF);
-            obj.Tail.cm = L*(2*D2+D1)/(3*(D2+D1));
-            obj.Tail.Iz = rho/8*(vTot*D1^2-vF*D2^2);
-            obj.Tail.Ir = Ixprime - (obj.Tail.m)*(hPrime^2-(obj.Tail.cm)^2);            
+            obj.Tail.cm = L*(2*D2+D1)/(3*(D2+D1));            
+            
+            R1 = D1/2;
+            R2 = D2/2;
+            m = (R2-R1)/L;
+            obj.Tail.Iz = pi*rho/(10*m)*((R2^5-R1^5)-((R2-e)^5-(R1-e)^5));
+            obj.Tail.Ir = Ix/2 + pi*rho*((m^2*L^5/5+1/2*m*L^4*R1+R1^2*L^3/3)-(m^2*L^5/5+1/2*m*L^4*(R1-e)+(R1-e)^2*L^3/3));
             
             % Calcule des proprietes aerodynamiques
             obj.Tail.CN = 0; % coefficient aerodynamique normal
@@ -91,13 +95,16 @@ classdef Rocket < handle
             
         end
         
-        function stage(obj, id, z, L, Din, Dout, rho)
+        function stage(obj, id, z, L, Dout, e, rho)
             % Assignation des proprietes
             tmpStage.id = id; % 
             tmpStage.L = L;
-            tmpStage.Din = Din;
             tmpStage.Dout = Dout;
+            tmpStage.e = e;
             tmpStage.rho = rho;
+            
+            %Calcul intermediaire
+            Din = Dout - e;%Si besoin
             
             % Calcule des proprietes de masse
             %probleme au niveau de l atribution aux differents etages
@@ -113,9 +120,9 @@ classdef Rocket < handle
             obj.Stage = [obj.Stage tmpStage];
         end
         
-        function motor(obj, z, m, thrustCurve, bt)
+        function motor(obj, z, m, D, L, thrustCurve, bt)
             if(~isa(m, 'function_handle'))
-                error('La masse doit ?tre une fonction')
+                error('La masse doit etre une fonction')
             end
             
             obj.Motor.z = z;
@@ -127,8 +134,8 @@ classdef Rocket < handle
             % la fonction ?
             % Calcule des proprietes de masse
             obj.Payload.cm = (1/2)*L;
-            obj.Payload.Iz = 0;
-            obj.Payload.Ir = 0;
+            obj.Payload.Iz = m*D^2/8;
+            obj.Payload.Ir = m/12*(3*(D/2)^2+L^2)+m*(L/2)^2;
             
         end
         
@@ -150,20 +157,19 @@ classdef Rocket < handle
             
             % Calcule des proprietes de masse
             obj.Payload.cm = (1/2)*L;
-            obj.Payload.Iz = 0;
+            obj.Payload.Iz = m*D^2/8;
             obj.Payload.Ir = 0;
         end
         
-        function parachute(obj, z, m, L, D, V)
+        function parachute(obj, z, m, D, Cd)
             % parachutee
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
             %   - z     :   emplacement du parachute
             %   - m     :   masse du parachute
-            %   - L     :   longueur des files
             %   - D     :   diamètre du parachute ouvert
-            %   - V     :   vitesse de descente en m/s
+            %   - Cd    :   Coefficient de trainee
             
             % Assignation des proprietes
             obj.Parachute.z = z;
@@ -174,8 +180,6 @@ classdef Rocket < handle
             
             % Calcule des proprietes de masse
             obj.Parachute.cm = 0;%car masse ponctuelle
-            obj.Parachute.Iz = 0;
-            obj.Parachute.Ir = 0;
             
         end
         
@@ -230,9 +234,7 @@ classdef Rocket < handle
             obj.Point.m = m;
             
             % Calcule des proprietes de masse
-            obj.Point.cm = 0;%en zero car point massique
-            obj.Point.Iz = 0;
-            obj.Point.Ir = 0;
+            obj.Point.cm =0;%en zero car point massique
             
         end
         
