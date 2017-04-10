@@ -3,18 +3,19 @@ close all;
 
 %% Define parameters of rocket and environment
 
-M = 2.294;
+M = 2.079;
 rho = 1.2;
-S = pi*(4*0.0247)^2/4;
+S = pi*(3*0.0247)^2/4;
 
 %% Get Data
 
-tmp = load('FlightData/VOL_MAX.mat');
+tmp = load('FlightData/VOL_GUILLAUME.mat');
 data = tmp.data;
 clear tmp
 
 t = data(1, :);         % experiment time [ms]
 h = data(12, :);        % Altitude (non calibrated) [m]
+h_off = 745;
 
 %% Get Flight Data
 
@@ -32,6 +33,10 @@ t_end   = t(h_max_i)+t_fly-t_apo;
 t_start_i = find(t>t_start, 1, 'first');
 t_end_i = find(t<t_end, 1, 'last');
 f_data  = data(:,t_start_i:t_end_i);
+
+% get apogee
+apo = max(h) - h_off;
+display(['Apogee: ' num2str(apo)]);
 
 % save only data from flight
 t = f_data(1, :)-t_start;

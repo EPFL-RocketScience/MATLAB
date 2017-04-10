@@ -3,22 +3,28 @@ clear all
 close all
 
 % System variables
-Cd = 0.51;       % estimated drag coefficient
-mi = 2.294;        % initial mass [kg]
-mp = 0.309-0.161;     % propellant mass
+Cd = 0.75;       % estimated drag coefficient
+mi = 2.002;        % initial mass [kg]
+mp = 0.127;     % propellant mass
 mf = mi-mp;     % final mass
-bt = 1.48;        % burn time [s]
-S = pi*(4*0.0247)^2/4;   % exposed section [m^2]
+bt = 2.37;        % burn time [s]
+S = pi*(3*0.0247)^2/4;   % exposed section [m^2]
 
 % Sim parameters
-tSpan = [0, 20];
-x0 = [1401;0];
+tSpan = [0, 15];
+x0 = [700;0];
 
-data = load('Thrust_Curves/Aerotech_H148R.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
+data = load('Thrust_Curves/Aerotech_H123W.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
 %Tdat = data.Tdat;
 Tdat = data.data;
+Tdat = Tdat(find(~isnan(Tdat(:,2))), :);
+
 % Add values to thrust curve at initial time and final time 
-Tdat = [0, Tdat(1,2); Tdat; bt+0.1, 0; tSpan(2), 0];
+if(Tdat(1,2) == 0)
+    Tdat = [Tdat; bt+0.1, 0; tSpan(2), 0];
+else
+    Tdat = [0, Tdat(1,2); Tdat; bt+0.1, 0; tSpan(2), 0];
+end
 
 % assume linear mass variation
 m = @(t) ((mf-mi)/bt * t + mi)*(t<=bt) + mf*(t>bt);
@@ -35,6 +41,8 @@ odefun = @(t, x) xdot_1D(t,x,m, m_dot, Ft, Cd, S);
 [T, a, p, rho] = stdAtmos(x(:,1));
 
 display(['Apogee: ' num2str(max(x(:,1) - x0(1))) ' m'])
+display(['Mach max: ' num2str(max(x(:, 2)./a))])
+display(['gmax: ' num2str(max(diff(x(:, 2))./diff(t)/9.8)) ' m/s^2']);
 
 figure
 

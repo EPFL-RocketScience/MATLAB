@@ -25,7 +25,7 @@ classdef Rocket < handle
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
             %   - L     :   longueur du cone
-            %   - D     :   Diamètre de la base du cone
+            %   - D     :   Diam?tre de la base du cone
             %   - e     :   epaisseur du cone
             %   - rho   :   densite
             %   - type  :   cone ou ogive
@@ -57,7 +57,7 @@ classdef Rocket < handle
             % D2 :  diametre du bas
             % L :   longueur du tail
             % e :   epaisseur de paroie
-            % z :   postion par rapport au haut de la fusée du haut du tail
+            % z :   postion par rapport au haut de la fus?e du haut du tail
             % rho : densite
             
             % Assignation des proprietes
@@ -88,7 +88,6 @@ classdef Rocket < handle
             obj.Tail.CN = 0; % coefficient aerodynamique normal
             obj.Tail.zCP = 0; % position du centre de pression relatif
             
-            
         end
         
         function stage(obj, id, z, L, Din, Dout, rho)
@@ -115,7 +114,7 @@ classdef Rocket < handle
         
         function motor(obj, z, m, thrustCurve, bt)
             if(~isa(m, 'function_handle'))
-                error('La masse doit ?tre une fonction')
+                error('La masse doit etre une fonction')
             end
             
             obj.Motor.z = z;
@@ -162,7 +161,7 @@ classdef Rocket < handle
             %   - z     :   emplacement du parachute
             %   - m     :   masse du parachute
             %   - L     :   longueur des files
-            %   - D     :   diamètre du parachute ouvert
+            %   - D     :   diam?tre du parachute ouvert
             %   - V     :   vitesse de descente en m/s
             
             % Assignation des proprietes
@@ -188,8 +187,8 @@ classdef Rocket < handle
             %   - N     :   nombre de fins
             %   - a     :   longueur de la petite base
             %   - b     :   longueur de la grande base
-            %   - gamma :   angle à l'avant de la fins
-            %   - phi   :   angle à l'arrière de la fins
+            %   - gamma :   angle ? l'avant de la fins
+            %   - phi   :   angle ? l'arri?re de la fins
             %   - e     :   epaisseur de la fins
             %   - rho   :   densite 
            
@@ -222,7 +221,7 @@ classdef Rocket < handle
             % Calcule la masse, le centre de masse, les moments d'inertie
             % INPUTS
             %   - z     :   position de la masse
-            %   - m     :   masse (i.e. equilibrage, déplacememtn centre de
+            %   - m     :   masse (i.e. equilibrage, d?placememtn centre de
             %   gravite)
             
             % Assignation des proprietes
