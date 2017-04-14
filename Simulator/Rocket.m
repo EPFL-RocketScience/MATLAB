@@ -41,7 +41,7 @@ classdef Rocket < handle
             obj.Nose.rho = rho;
             
             % Calcule intermediaire
-            V = e*pi*sqrt(1+D^2/(4*L^2))*L*D/2;
+            V = e*pi*sqrt(1+D^2/(4*L^2))*L*D/2;%volume
                   
             % Calcule des proprietes de masse
             obj.Nose.m = rho*V;
@@ -234,15 +234,20 @@ classdef Rocket < handle
             obj.Fins.e = e;
             obj.Fins.rho = rho;
             
-            %Calcule intermediaire 
+            %Calcules intermediaires 
             obj.Fins.h = (Cr-Ct)/(1/tan(gamma)+1/tan(phi)); 
+            a = Ct;
+            b = Cr;
+            c = obj.Fins.h/(sin(gama));
+            d = obj.Fins.h/(cos(phi));
             
             % Calcule des proprietes de masse
-            obj.Fins.cmz = 0;
-            obj.Fins.cmy = 0;
-            obj.Fins.m = 0;
-            obj.Fins.Iz = 0;
-            obj.Fins.Ir = 0;
+            obj.Fins.cmz = obj.Fins.h/3*(2*a+b)/(a+b);
+            obj.Fins.cmy = b/2+(2*a+b)*(c^2-d^2)/(6*(b^2-a^2));
+            obj.Fins.m = (a+b)*obj.Fins.h/2*e*rho;
+            obj.Fins.Iz = e*rho*h^4*tan(gama)/4+e*rho*tan(phi)*((b/tan(phi)+b*tan(phi))^4-((h*tan(phi)+a)/tan(phi)+b*tan(phi))^4)+rho*e*a*h^3;%triangle 1 + triangle 2 + rectable
+            obj.Fins.Ir = e*rho*tan(gamma)^3*h^4/4+e*rho*(b^4*tan(phi)/3-b^4/(4*tg(phi))-b*tan(phi)*(a+tan(gamma)*h)^3/3+(a+tan(gamma)*h)^4/(4*tan(phi)));%iy
+            obj.Fins.Iteta = Iz+Ir; 
                    
             % Calcule des proprietes aerodynamiques
             obj.Fins.CN = 0; % coefficient aerodynamique normal
