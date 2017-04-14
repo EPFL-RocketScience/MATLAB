@@ -9,6 +9,10 @@ classdef Rocket < handle
         Payload
         Parachute
         Points
+        
+        Mass
+        CM
+        Iz
     end
     
     methods
@@ -234,7 +238,8 @@ classdef Rocket < handle
             obj.Fins.h = (Cr-Ct)/(1/tan(gamma)+1/tan(phi)); 
             
             % Calcule des proprietes de masse
-            obj.Fins.cm = 0;
+            obj.Fins.cmz = 0;
+            obj.Fins.cmy = 0;
             obj.Fins.m = 0;
             obj.Fins.Iz = 0;
             obj.Fins.Ir = 0;
@@ -265,6 +270,61 @@ classdef Rocket < handle
             
         end
     
+        function update(obj)
+            obj.Mass    = obj.calc_m;
+            obj.CM      = obj.calc_cm; 
+            obj.Iz      = obj.calc_Iz; % TODO check calc of fins Iz
+        end
+        
     end
+    
+    methods (Access = private)
+        
+        function m = calc_m(obj)
+            % calcule de la masse totale
 
+            % masse statique
+            m_stat = obj.Nose.m;
+            m_stat = m_stat + sum([obj.Stage.m]);
+            m_stat = m_stat + obj.Tail.m;
+            m_stat = m_stat + obj.Fins.m;
+            m_stat = m_stat + sum([obj.Payload.m]);
+            m_stat = m_stat + sum([obj.Parachute.m]);
+            m_stat = m_stat + sum([obj.Points.m]);
+
+            % masse variable (masse du moteur)
+            m = @(t) (m_stat + obj.Motor.m(t));
+
+        end
+        
+        function cm =calc_cm(obj)
+            % calcule du centre de mass
+            
+            cm_stat = obj.Nose.m*obj.Nose.cm;
+            cm_stat = cm_stat + sum([obj.Stage.m].*([obj.Stage.z] + [obj.Stage.cm]));
+            cm_stat = cm_stat + obj.Tail.m*(obj.Tail.z+obj.Tail.cm);
+            cm_stat = cm_stat + obj.Fins.m*(obj.Fins.z+obj.Fins.cm);
+            cm_stat = cm_stat + sum([obj.Payload.m].*([obj.Payload.z] + [obj.Payload.cm]));
+            cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
+            cm_stat = cm_stat + sum([obj.Points.m].*([obj.Points.z] + [obj.Points.cm]));
+            
+            cm = @(t) (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.Mass(t);
+        end
+        
+        function Iz = calc_Iz(obj)
+            % calcule du moment d'inertie axial
+            Iz_stat = obj.Nose.Iz;
+            Iz_stat = Iz_stat + sum([obj.Stage.Iz]);
+            Iz_stat = Iz_stat + obj.Tail.Iz;
+            
+            Iz_stat = Iz_stat + obj.Fins.Iz; % TODO change fin inertia
+            
+            % moment calculation
+            
+            Iz_stat = Iz_stat + sum([obj.Payload.Iz]);
+            
+            Iz = @(t) (Iz_stat + obj.Motor.Iz(t));
+        end
+        
+    end
 end
