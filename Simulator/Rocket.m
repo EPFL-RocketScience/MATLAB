@@ -245,9 +245,9 @@ classdef Rocket < handle
             obj.Fins.cmz = obj.Fins.h/3*(2*a+b)/(a+b);
             obj.Fins.cmy = b/2+(2*a+b)*(c^2-d^2)/(6*(b^2-a^2));
             obj.Fins.m = (a+b)*obj.Fins.h/2*e*rho;
-            obj.Fins.Iz = e*rho*h^4*tan(gama)/4+e*rho*tan(phi)*((b/tan(phi)+b*tan(phi))^4-((h*tan(phi)+a)/tan(phi)+b*tan(phi))^4)+rho*e*a*h^3;%triangle 1 + triangle 2 + rectable
-            obj.Fins.Ir = e*rho*tan(gamma)^3*h^4/4+e*rho*(b^4*tan(phi)/3-b^4/(4*tg(phi))-b*tan(phi)*(a+tan(gamma)*h)^3/3+(a+tan(gamma)*h)^4/(4*tan(phi)));%iy
-            obj.Fins.Iteta = Iz+Ir; 
+            obj.Fins.Iz = e*rho*obj.Fins.h^4*tan(gama)/4+e*rho*tan(phi)*((b/tan(phi)+b*tan(phi))^4-((obj.Fins.obj.Fins.h*tan(phi)+a)/tan(phi)+b*tan(phi))^4)+rho*e*a*obj.Fins.h^3;%triangle 1 + triangle 2 + rectable
+            obj.Fins.Ir = e*rho*tan(gamma)^3*obj.Fins.h^4/4+e*rho*(b^4*tan(phi)/3-b^4/(4*tg(phi))-b*tan(phi)*(a+tan(gamma)*obj.Fins.h)^3/3+(a+tan(gamma)*obj.Fins.h)^4/(4*tan(phi)));%iy
+            obj.Fins.Itheta = Iz+Ir; 
                    
             % Calcule des proprietes aerodynamiques
             obj.Fins.CN = 0; % coefficient aerodynamique normal
