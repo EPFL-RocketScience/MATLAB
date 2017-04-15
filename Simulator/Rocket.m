@@ -210,17 +210,19 @@ classdef Rocket < handle
             
         end
         
-        function fins(obj, z, N, Ct, Cr, gamma, phi, e, rho)
+        function fins(obj, z, N, Ct, Cr, gamma, phi, r, e, rho)
             % fins
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
             %   - z     :   position du haut de la fins
             %   - N     :   nombre de fins
-            %   - Ct     :   longueur de la pointe de l'aileron
-            %   - Cr     :   longueur de la base de l'aileron
+            %   - Ct    :   longueur de la pointe de l'aileron
+            %   - Cr    :   longueur de la base de l'aileron
             %   - gamma :   angle ? l'avant de la fins
             %   - phi   :   angle ? l'arriere de la fins
+            %   - r     :   distance de l'aileron par rapport ? l'axe
+            %   vertical
             %   - e     :   epaisseur de la fins
             %   - rho   :   densite 
            
@@ -231,6 +233,7 @@ classdef Rocket < handle
             obj.Fins.Cr = Cr;
             obj.Fins.gamma = gamma;
             obj.Fins.phi = phi;
+            obj.Fins.r = r;
             obj.Fins.e = e;
             obj.Fins.rho = rho;
             
@@ -238,8 +241,8 @@ classdef Rocket < handle
             obj.Fins.h = (Cr-Ct)/(1/tan(gamma)+1/tan(phi)); 
             
             % Calcule des proprietes de masse
-            obj.Fins.cmz = 0;
-            obj.Fins.cmy = 0;
+            obj.Fins.cmz = 0; % coordonn?e du centre de masse dans l'axe de la fus?e
+            obj.Fins.cmr = 0; % coordonn?e du centre de masse dans le plan transverse ? l'axe de la fusee
             obj.Fins.m = 0;
             obj.Fins.Iz = 0;
             obj.Fins.Ir = 0;
@@ -273,7 +276,7 @@ classdef Rocket < handle
         function update(obj)
             obj.Mass    = obj.calc_m;
             obj.CM      = obj.calc_cm; 
-            obj.Iz      = obj.calc_Iz; % TODO check calc of fins Iz
+            obj.Iz      = obj.calc_Iz;
         end
         
     end
@@ -312,13 +315,13 @@ classdef Rocket < handle
         end
         
         function Iz = calc_Iz(obj)
-            % calcule du moment d'inertie axial
+            % calcule du moment d'inertie axial au centre de masse
             Iz_stat = obj.Nose.Iz;
             Iz_stat = Iz_stat + sum([obj.Stage.Iz]);
             Iz_stat = Iz_stat + obj.Tail.Iz;
             
-            Iz_stat = Iz_stat + obj.Fins.Iz; % TODO change fin inertia
-            
+            Iz_stat = Iz_stat + obj.Fins.N*(obj.Fins.Iz +...
+                obj.Fins.m*(2*obj.Fins.cmr*obj.Fins.r+ obj.Fins.r^2));
             % moment calculation
             
             Iz_stat = Iz_stat + sum([obj.Payload.Iz]);
@@ -326,5 +329,28 @@ classdef Rocket < handle
             Iz = @(t) (Iz_stat + obj.Motor.Iz(t));
         end
         
+        function Ir = calc_Ir(obj)
+            % calcule du moment d'inertie perpendiculaire ? l'axe de la
+            % fus?e au centre de masse
+            
+            Ir_stat = obj.Nose.Ir + obj.Nose.m*(obj.CM^2-obj.CM*obj.Nose.cm);
+            Ir_stat = Ir_stat + sum([obj.Stage.Ir] + [obj.Stage.m].*...
+                (obj.CM-[obj.Stage.z]).^2-([obj.Stage.cm]-[obj.Stage.z]).*...
+                [obj.Stage.cm])
+            Ir_stat = Ir_stat + obj.Tail.Ir + obj.Tail.m*(...
+                (obj.CM-obj.Tail.z)^2-(obj.CM-obj.Tail.z)*obj.Tail.cm);
+            
+            % calcule du moment d'inertie pour les ailerons
+            phi = 360/obj.Fins.N; % angle entre les ailerons
+            
+            for i = 1:obj.Fins.N
+                phi_i = phi*(i-1); % angle de rotation du sys de coordonnees
+                Ir = cosd(phi_i)^2*obj.Fins.Itheta+sind(phi_i)^2*obj.Fins.Ir;
+                Ir_stat = Ir_stat + Ir + obj.Fins.m*(...
+                (obj.CM-obj.Fins.z)^2-(obj.CM-obj.Fins.z)*obj.Fins.cmz);
+            end
+            
+            Ir_stat = Ir_stat + obj.
+        end
     end
 end
