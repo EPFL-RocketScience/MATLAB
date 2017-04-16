@@ -1,0 +1,12 @@
+% .gitignore
+% ignore these files 
+% Eric Brunner 03/04/2017
+
+% Ignore git files
+*.orig
+
+% Ignore backup files
+*~
+
+% Ignore flight data
+Scripts/FlightData/*
