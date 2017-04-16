@@ -295,13 +295,6 @@ classdef Rocket < handle
             obj.Points = [obj.Points point];
             
         end
-    
-        function update(obj)
-            obj.Mass    = obj.calc_m;
-            obj.CM      = obj.calc_cm; 
-            obj.Iz      = obj.calc_Iz;
-            obj.Ir      = obj.calc_Ir;
-        end
          
     end
     
@@ -320,11 +313,11 @@ classdef Rocket < handle
             m_stat = m_stat + sum([obj.Points.m]);
 
             % masse variable (masse du moteur)
-            m = @(t) (m_stat + obj.Motor.m(t));
+            m = (m_stat + obj.Motor.m(t));
 
         end
         
-        function cm =calc_cm(obj)
+        function cm =calc_cm(obj, t)
             % calcule du centre de mass
             
             cm_stat = obj.Nose.m*obj.Nose.cm;
@@ -335,10 +328,10 @@ classdef Rocket < handle
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Points.m].*([obj.Points.z] + [obj.Points.cm]));
             
-            cm = @(t) (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.Mass(t);
+            cm = (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.calc_m(t);
         end
         
-        function Iz = calc_Iz(obj)
+        function Iz = calc_Iz(obj, t)
             % calcule du moment d'inertie axial au centre de masse
             Iz_stat = obj.Nose.Iz;
             Iz_stat = Iz_stat + sum([obj.Stage.Iz]);
@@ -350,19 +343,21 @@ classdef Rocket < handle
             
             Iz_stat = Iz_stat + sum([obj.Payload.Iz]);
             
-            Iz = @(t) (Iz_stat + obj.Motor.Iz(t));
+            Iz = Iz_stat + obj.Motor.Iz(t);
         end
         
-        function Ir = calc_Ir(obj)
+        function Ir = calc_Ir(obj, t)
             % calcule du moment d'inertie perpendiculaire ? l'axe de la
             % fus?e au centre de masse
             
-            Ir = @(t) obj.Nose.Ir + obj.Nose.m*(obj.CM(t)^2-obj.CM(t)*obj.Nose.cm);
-            Ir = @(t) Ir(t) + sum([obj.Stage.Ir] + [obj.Stage.m].*(...
-                (obj.CM(t)-[obj.Stage.z]).^2-(obj.CM(t)-[obj.Stage.z]).*...
+            CMt = obj.calc_cm(t);
+            
+            Ir = obj.Nose.Ir + obj.Nose.m*(CMt.^2-CMt*obj.Nose.cm);
+            Ir = Ir + sum([obj.Stage.Ir] + [obj.Stage.m].*(...
+                (CMt-[obj.Stage.z]).^2-(CMt-[obj.Stage.z]).*...
                 [obj.Stage.cm]));
-            Ir = @(t) Ir(t) + obj.Tail.Ir + obj.Tail.m*(...
-                (obj.CM(t)-obj.Tail.z)^2-(obj.CM(t)-obj.Tail.z)*obj.Tail.cm);
+            Ir = Ir + obj.Tail.Ir + obj.Tail.m*(...
+                (CMt-obj.Tail.z)^2-(CMt-obj.Tail.z)*obj.Tail.cm);
             
             % calcule du moment d'inertie pour les ailerons
             phi = 360/obj.Fins.N; % angle entre les ailerons
@@ -370,16 +365,16 @@ classdef Rocket < handle
             for i = 1:obj.Fins.N
                 phi_i = phi*(i-1); % angle de rotation du sys de coordonnees
                 Ir_fin = cosd(phi_i)^2*obj.Fins.Itheta+sind(phi_i)^2*obj.Fins.Ir;
-                Ir = @(t) Ir(t) + Ir_fin + obj.Fins.m*(...
-                (obj.CM(t)-obj.Fins.z)^2-(obj.CM(t)-obj.Fins.z)*obj.Fins.cmz);
+                Ir = Ir + Ir_fin + obj.Fins.m*(...
+                (CMt-obj.Fins.z)^2-(CMt-obj.Fins.z)*obj.Fins.cmz);
             end
             
-            Ir = @(t) Ir(t) + sum([obj.Payload.Ir] + [obj.Payload.m].*(...
-                (obj.CM(t)-[obj.Payload.z]).^2-(obj.CM(t)-[obj.Payload.z]).*...
+            Ir = Ir + sum([obj.Payload.Ir] + [obj.Payload.m].*(...
+                (CMt-[obj.Payload.z]).^2-(CMt-[obj.Payload.z]).*...
                 [obj.Payload.cm]));
             
-            Ir = @(t) Ir(t) + obj.Motor.Ir(t) + obj.Motor.m(t)*(...
-                (obj.CM(t)-obj.Motor.z)^2-(obj.CM(t)-obj.Motor.z)*obj.Motor.cm);
+            Ir = Ir + obj.Motor.Ir(t) + obj.Motor.m(t)*(...
+                (CMt-obj.Motor.z)^2-(CMt-obj.Motor.z)*obj.Motor.cm);
         end
     end
 end

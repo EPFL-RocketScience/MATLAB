@@ -33,23 +33,23 @@ R.fins(2, 4, 0.25, 0.35, 0.1, 0.15, 0.075, 0.005, rho_carbon);
 R.point('tuyere', 2.5, 1);
 
 % Calculate stuff
-R.update();
+%R.update();
 
 % Plot stuff
 t = linspace(0, R.Motor.bt+10, 100);
 figure
 subplot(4,1,1)
-plot(t, R.Mass(t));
+plot(t, R.calc_m(t));
 ylabel('m [kg]');
 subplot(4,1,2)
-plot(t, R.CM(t));
+plot(t, R.calc_cm(t));
 ylabel('CM [m]');
 subplot(4,1,3)
-plot(t, R.Iz(t));
+plot(t, R.calc_Iz(t));
 ylabel('Iz [kg*m^2]');
 subplot(4,1,4)
-for ti = 1:length(t)
-    Ir(ti) = R.Ir(t(ti)); 
+for it = 1:length(t)
+   Ir(it) = R.calc_Ir(t(it)); 
 end
 plot(t, Ir);
 ylabel('Ir [kg*m^2]');
