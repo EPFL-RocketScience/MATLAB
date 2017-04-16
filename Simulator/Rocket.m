@@ -13,6 +13,7 @@ classdef Rocket < handle
         Mass
         CM
         Iz
+        Ir
     end
     
     methods
@@ -41,7 +42,7 @@ classdef Rocket < handle
             obj.Nose.rho = rho;
             
             % Calcule intermediaire
-            V = e*pi*sqrt(1+D^2/(4*L^2))*L*D/2;
+            V = e*pi*sqrt(1+D^2/(4*L^2))*L*D/2;%volume
                   
             % Calcule des proprietes de masse
             obj.Nose.m = rho*V;
@@ -210,7 +211,7 @@ classdef Rocket < handle
             
         end
         
-        function fins(obj, z, N, Ct, Cr, gamma, phi, r, e, rho)
+        function fins(obj, z, N, Ct, Cr, xt, S, r, e, rho)
             % fins
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
@@ -219,8 +220,8 @@ classdef Rocket < handle
             %   - N     :   nombre de fins
             %   - Ct    :   longueur de la pointe de l'aileron
             %   - Cr    :   longueur de la base de l'aileron
-            %   - gamma :   angle ? l'avant de la fins
-            %   - phi   :   angle ? l'arriere de la fins
+            %   - xt    :   port?e axiale du bord d'attaque
+            %   - S     :   envergure de l'aileron
             %   - r     :   distance de l'aileron par rapport ? l'axe
             %   vertical
             %   - e     :   epaisseur de la fins
@@ -231,21 +232,43 @@ classdef Rocket < handle
             obj.Fins.N = N;
             obj.Fins.Ct = Ct;
             obj.Fins.Cr = Cr;
-            obj.Fins.gamma = gamma;
-            obj.Fins.phi = phi;
+            obj.Fins.xt = xt;
+            obj.Fins.S = S;
             obj.Fins.r = r;
             obj.Fins.e = e;
             obj.Fins.rho = rho;
             
-            %Calcule intermediaire 
-            obj.Fins.h = (Cr-Ct)/(1/tan(gamma)+1/tan(phi)); 
+            %Calcules intermediaires 
+            % densit? surfacique
+            lamb = rho * e;            
+            % Calcule du premier triangle (Surface 1)
+            Iz1 = lamb*xt*S^3/36;
+            Ir1 = lamb*xt^3*S/36;
+            A1  = xt*S/2;        
+            cmz1 = 2*xt/3;
+            cmr1 = S/3;           
+            % Calcule du rectangle (Surface 2)
+            Iz2 = lamb*Ct*S^3/3;
+            Ir2 = lamb*Ct^3*S/3;
+            A2  = Ct*S;       
+            cmz2 = Ct/2;
+            cmr2 = S/2;           
+            % Calcule du deuxi?me triangle (Surface 3)
+            xe  = Cr-Ct-xt;
+            Iz3 = lamb*xe*S^3/36;
+            Ir3 = lamb*xe^3*S/36;
+            A3  = xe*S/2;
+            cmz3 = xe/3;
+            cmr3 = S/3;
             
             % Calcule des proprietes de masse
-            obj.Fins.cmz = 0; % coordonn?e du centre de masse dans l'axe de la fus?e
-            obj.Fins.cmr = 0; % coordonn?e du centre de masse dans le plan transverse ? l'axe de la fusee
-            obj.Fins.m = 0;
-            obj.Fins.Iz = 0;
-            obj.Fins.Ir = 0;
+            Atot    = (Cr + Ct)/2*S;
+            obj.Fins.m       = lamb*Atot;
+            obj.Fins.cmz     = (A1*cmz1+A2*(xt+cmz2)+A3*(xt+Ct+cmz3))/Atot;
+            obj.Fins.cmr     = (A1*cmr1+A2*cmr2+A3*cmr3)/Atot;
+            obj.Fins.Iz      = Iz1 + Iz2 + Iz3 + lamb*(A1*cmr1^2+A2*cmr2^2+A3*cmr3^2);
+            obj.Fins.Ir      = Ir1 + Ir2 + Ir3 + lamb*(A1*cmz1^2+A2*(xt+cmz2)^2+A3*(xt+Ct+cmz3)^2);
+            obj.Fins.Itheta  = obj.Fins.Iz+obj.Fins.Ir;
                    
             % Calcule des proprietes aerodynamiques
             obj.Fins.CN = 0; % coefficient aerodynamique normal
@@ -277,13 +300,14 @@ classdef Rocket < handle
             obj.Mass    = obj.calc_m;
             obj.CM      = obj.calc_cm; 
             obj.Iz      = obj.calc_Iz;
+            obj.Ir      = obj.calc_Ir;
         end
-        
+         
     end
     
-    methods (Access = private)
+    methods (Access = public)
         
-        function m = calc_m(obj)
+        function m = calc_m(obj, t)
             % calcule de la masse totale
 
             % masse statique
@@ -306,7 +330,7 @@ classdef Rocket < handle
             cm_stat = obj.Nose.m*obj.Nose.cm;
             cm_stat = cm_stat + sum([obj.Stage.m].*([obj.Stage.z] + [obj.Stage.cm]));
             cm_stat = cm_stat + obj.Tail.m*(obj.Tail.z+obj.Tail.cm);
-            cm_stat = cm_stat + obj.Fins.m*(obj.Fins.z+obj.Fins.cm);
+            cm_stat = cm_stat + obj.Fins.m*obj.Fins.N*(obj.Fins.z+obj.Fins.cmz);
             cm_stat = cm_stat + sum([obj.Payload.m].*([obj.Payload.z] + [obj.Payload.cm]));
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Points.m].*([obj.Points.z] + [obj.Points.cm]));
@@ -333,24 +357,29 @@ classdef Rocket < handle
             % calcule du moment d'inertie perpendiculaire ? l'axe de la
             % fus?e au centre de masse
             
-            Ir_stat = obj.Nose.Ir + obj.Nose.m*(obj.CM^2-obj.CM*obj.Nose.cm);
-            Ir_stat = Ir_stat + sum([obj.Stage.Ir] + [obj.Stage.m].*...
-                (obj.CM-[obj.Stage.z]).^2-([obj.Stage.cm]-[obj.Stage.z]).*...
-                [obj.Stage.cm])
-            Ir_stat = Ir_stat + obj.Tail.Ir + obj.Tail.m*(...
-                (obj.CM-obj.Tail.z)^2-(obj.CM-obj.Tail.z)*obj.Tail.cm);
+            Ir = @(t) obj.Nose.Ir + obj.Nose.m*(obj.CM(t)^2-obj.CM(t)*obj.Nose.cm);
+            Ir = @(t) Ir(t) + sum([obj.Stage.Ir] + [obj.Stage.m].*(...
+                (obj.CM(t)-[obj.Stage.z]).^2-(obj.CM(t)-[obj.Stage.z]).*...
+                [obj.Stage.cm]));
+            Ir = @(t) Ir(t) + obj.Tail.Ir + obj.Tail.m*(...
+                (obj.CM(t)-obj.Tail.z)^2-(obj.CM(t)-obj.Tail.z)*obj.Tail.cm);
             
             % calcule du moment d'inertie pour les ailerons
             phi = 360/obj.Fins.N; % angle entre les ailerons
             
             for i = 1:obj.Fins.N
                 phi_i = phi*(i-1); % angle de rotation du sys de coordonnees
-                Ir = cosd(phi_i)^2*obj.Fins.Itheta+sind(phi_i)^2*obj.Fins.Ir;
-                Ir_stat = Ir_stat + Ir + obj.Fins.m*(...
-                (obj.CM-obj.Fins.z)^2-(obj.CM-obj.Fins.z)*obj.Fins.cmz);
+                Ir_fin = cosd(phi_i)^2*obj.Fins.Itheta+sind(phi_i)^2*obj.Fins.Ir;
+                Ir = @(t) Ir(t) + Ir_fin + obj.Fins.m*(...
+                (obj.CM(t)-obj.Fins.z)^2-(obj.CM(t)-obj.Fins.z)*obj.Fins.cmz);
             end
             
-            Ir_stat = Ir_stat + obj.
+            Ir = @(t) Ir(t) + sum([obj.Payload.Ir] + [obj.Payload.m].*(...
+                (obj.CM(t)-[obj.Payload.z]).^2-(obj.CM(t)-[obj.Payload.z]).*...
+                [obj.Payload.cm]));
+            
+            Ir = @(t) Ir(t) + obj.Motor.Ir(t) + obj.Motor.m(t)*(...
+                (obj.CM(t)-obj.Motor.z)^2-(obj.CM(t)-obj.Motor.z)*obj.Motor.cm);
         end
     end
 end
