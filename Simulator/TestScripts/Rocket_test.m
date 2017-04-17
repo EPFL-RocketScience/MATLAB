@@ -39,20 +39,37 @@ R.point('tuyere', 2.5, 1);
 t = linspace(0, R.Motor.bt+10, 100);
 figure
 subplot(4,1,1)
-plot(t, R.calc_m(t));
+plot(t, R.m(t));
+title('Mass properties');
 ylabel('m [kg]');
 subplot(4,1,2)
-plot(t, R.calc_cm(t));
+plot(t, R.cm(t));
 ylabel('CM [m]');
 subplot(4,1,3)
-plot(t, R.calc_Iz(t));
+plot(t, R.Iz(t));
 ylabel('Iz [kg*m^2]');
 subplot(4,1,4)
 for it = 1:length(t)
-   Ir(it) = R.calc_Ir(t(it)); 
+   Ir(it) = R.Ir(t(it)); 
 end
 plot(t, Ir);
 ylabel('Ir [kg*m^2]');
 xlabel('t [s]');
 
+
+alpha = linspace(-10, 10, 100);
+figure
+for alpha_i = 1:length(alpha)
+   [CNa(alpha_i), zCP(alpha_i)] = R.aeroCoeff(alpha(alpha_i), 0, 0); 
+end
+subplot(2,1,1)
+plot(alpha, CNa.*alpha);
+title('Aerodynamic properties at M = 0 & \theta = 0.')
+ylabel('CN');
+grid on;
+subplot(2,1,2)
+plot(alpha, zCP);
+ylabel('zCP [m]');
+grid on;
+xlabel('alpha [^\circ]');
 

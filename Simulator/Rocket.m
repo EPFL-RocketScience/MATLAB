@@ -10,10 +10,7 @@ classdef Rocket < handle
         Parachute
         Points
         
-        Mass
-        CM
-        Iz
-        Ir
+        d = 0; % dim?tre de r?f?rence ? la base du c?ne
     end
     
     methods
@@ -38,6 +35,7 @@ classdef Rocket < handle
             % Assignation des proprietes
             obj.Nose.L = L;
             obj.Nose.D = D;
+            obj.d = D;
             obj.Nose.e = e;
             obj.Nose.rho = rho;
             
@@ -51,8 +49,8 @@ classdef Rocket < handle
             obj.Nose.Ir = rho*V/4*(D^2/4+2*L^2);
         
             % Calcule des proprietes aerodynamiques
-            obj.Nose.CN = 0; % coefficient aerodynamique normal
-            obj.Nose.zCP = 0; % position du centre de pression relatif au haut du cone
+            obj.Nose.CNa = @(alpha) cna_noseCone(alpha); % d?riv?e du coefficient aerodynamique normal
+            obj.Nose.zCP = zCP_noseCone(L); % position du centre de pression relatif au haut du cone
         end
         
         function tail(obj, D1, D2, L, e, z, rho)
@@ -85,8 +83,8 @@ classdef Rocket < handle
             obj.Tail.Ir = obj.Tail.Iz/2 + pi*rho*((m^2*L^5/5+1/2*m*L^4*R1+R1^2*L^3/3)-(m^2*L^5/5+1/2*m*L^4*(R1-e)+(R1-e)^2*L^3/3));
             
             % Calcule des proprietes aerodynamiques
-            obj.Tail.CN = 0; % coefficient aerodynamique normal
-            obj.Tail.zCP = 0; % position du centre de pression relatif
+            obj.Tail.CNa = @(alpha) cna_transition(obj.d, D1, D2, alpha); % d?riv?e du coefficient aerodynamique normal
+            obj.Tail.zCP = zCP_transition(L, D1, D2); % position du centre de pression relatif
             
         end
         
@@ -121,9 +119,9 @@ classdef Rocket < handle
             stage.Iz = pi*rho*L*1/2*((Dout/2)^4-(Din/2)^4);
             stage.Ir = pi*rho*L*1/12*(3*((Dout/2)^4-(Din/2)^4)+L^2*((Dout/2)^2-(Din/2)^2));
             
-            % Calcule des proprietes aerodynamiques ??? pas de propr. non ?
-            stage.CN = 0; % coefficient aerodynamique normal
-            stage.zCP = 0;
+            % Calcule des proprietes aerodynamiques
+            stage.CNa = @(alpha) cna_stage(Dout, L, obj.d, alpha); % coefficient aerodynamique normal
+            stage.zCP = zCP_stage(L);
             
             obj.Stage = [obj.Stage stage];
         end
@@ -271,8 +269,8 @@ classdef Rocket < handle
             obj.Fins.Itheta  = obj.Fins.Iz+obj.Fins.Ir;
                    
             % Calcule des proprietes aerodynamiques
-            obj.Fins.CN = 0; % coefficient aerodynamique normal
-            obj.Fins.zCP = 0; % position du centre de pression relatif SUR LE FINS
+            obj.Fins.CNa = @(M, theta) cna_fins(N, r, S, obj.d, Cr, Ct, xt, M, pi*obj.d^2/4, theta); % coefficient aerodynamique normal
+            obj.Fins.zCP = zCP_fins(xt, Cr, Ct); % position du centre de pression relatif SUR LE FINS
         end
         
         function point(obj, id, z, m)
@@ -299,8 +297,9 @@ classdef Rocket < handle
     end
     
     methods (Access = public)
+        % ?ocket property methods
         
-        function m = calc_m(obj, t)
+        function m = m(obj, t)
             % calcule de la masse totale
 
             % masse statique
@@ -317,7 +316,7 @@ classdef Rocket < handle
 
         end
         
-        function cm =calc_cm(obj, t)
+        function cm = cm(obj, t)
             % calcule du centre de mass
             
             cm_stat = obj.Nose.m*obj.Nose.cm;
@@ -328,10 +327,10 @@ classdef Rocket < handle
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Points.m].*([obj.Points.z] + [obj.Points.cm]));
             
-            cm = (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.calc_m(t);
+            cm = (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.m(t);
         end
         
-        function Iz = calc_Iz(obj, t)
+        function Iz = Iz(obj, t)
             % calcule du moment d'inertie axial au centre de masse
             Iz_stat = obj.Nose.Iz;
             Iz_stat = Iz_stat + sum([obj.Stage.Iz]);
@@ -346,11 +345,11 @@ classdef Rocket < handle
             Iz = Iz_stat + obj.Motor.Iz(t);
         end
         
-        function Ir = calc_Ir(obj, t)
+        function Ir = Ir(obj, t)
             % calcule du moment d'inertie perpendiculaire ? l'axe de la
             % fus?e au centre de masse
             
-            CMt = obj.calc_cm(t);
+            CMt = obj.cm(t);
             
             Ir = obj.Nose.Ir + obj.Nose.m*(CMt.^2-CMt*obj.Nose.cm);
             Ir = Ir + sum([obj.Stage.Ir] + [obj.Stage.m].*(...
@@ -376,5 +375,195 @@ classdef Rocket < handle
             Ir = Ir + obj.Motor.Ir(t) + obj.Motor.m(t)*(...
                 (CMt-obj.Motor.z)^2-(CMt-obj.Motor.z)*obj.Motor.cm);
         end
+        
+        function [CNa_tot, zCP] = aeroCoeff(obj, alpha, M, theta)
+            
+            CNa_Nose = obj.Nose.CNa(alpha);
+            zCP = CNa_Nose*obj.Nose.zCP;
+            CNa_Stage = cellfun(@(c) c(alpha), {obj.Stage.CNa});
+            zCP = zCP + sum(CNa_Stage.*([obj.Stage.zCP]+[obj.Stage.z]));
+            CNa_Tail = obj.Tail.CNa(alpha);
+            zCP = zCP + CNa_Tail*(obj.Tail.zCP+obj.Tail.z);
+            CNa_Fins = obj.Fins.CNa(M, theta);
+            zCP = zCP + CNa_Fins*(obj.Fins.zCP+obj.Fins.z);
+            
+            CNa_tot = (CNa_Nose + sum(CNa_Stage) + CNa_Tail + CNa_Fins);
+            
+            zCP = zCP / CNa_tot;
+            
+        end
     end
 end
+
+% calculate aerodynamic properties
+           
+function zcp = zCP_transition(L, d1, d2)
+    % zCP_transition
+    % calculate position of cp on a body element (body of revolution)
+    % from tip of element 
+    % INPUT:
+    %   - L     : length of part [m]
+    %   - d1    : diameter before transition
+    %   - d2    : diameter after transition
+    % RETURN:
+    %   - xcp   : center of pressure position along x axis [m]
+    zcp = L/3*(1+(1-d1/d2)/(1-(d1/d2)^2));
+end
+
+function  zcp = zCP_noseCone(L)
+    % zCP_noseCone
+    % calculate cp position of a conical nose from tip of nose
+    % INPUT:
+    %   - L     : nose length [m]
+    % RETURN:
+    %   - xcp   : center of pressure position along x axis [m]
+    zcp = 2/3*L;
+end
+
+function zcp = zCP_noseOgive(L)
+    % zCP_noseOgive
+    % calculate cp position of an ogive shaped nose from tip
+    % INPUT:
+    %   -L      : nose length [m]
+    % RETURN:
+    %   - xcp   : center of pressure position along x axis [m]
+    zcp = 0.466*L;
+end
+
+function zcp = zCP_fins(Xt, Cr, Ct)
+    % zCP_fins
+    % calculate cp position of any type of trapezoidal fins
+    % The position is the intersection of the mean aerodynamic
+    % chord and the quarter cord line
+    % INPUT: 
+    %   - Xt    : longitudinal distance between leading edge of
+    %             root chord and leading edge of tip chord. [m]
+    %   - Cr    : root chord length [m]
+    %   - Ct    : tip chord length [m]
+    % RETURN:
+    %   - zcp   : center of pressure position along z axis [m]
+    zcp = Xt/3*(Cr+2*Ct)/(Cr+Ct) + 1/6*((Cr+Ct)-(Cr*Ct)/(Cr+Ct));
+end    
+
+function zcp = zCP_stage(L)
+    % zCP_stage
+    % calculate cp position of a stage element
+    % INPUT:
+    % - L   : length of stage [m]
+    % RETURN:
+    % - zcp : center of pressure position along z axis [m]
+    zcp = L/2;
+end
+
+% NORMAL AERODYNAMIC COEFFICIENT DERIVATIVES (NACD)
+
+function cna = cna_noseCone(alpha)
+    % cna_noseCone
+    % calculate NACD of nose with a conical or ogive shape
+    % INPUTS:
+    %   - alpha : rocket angle of attack
+    % RETURN:
+    %   - cna   : NACD [1/rad]
+    cna = 2*sind(alpha)/alpha;
+end
+
+function cna = cna_stage(D, L, d, alpha)
+    % cna_noseCone
+    % calculate NACD of nose with a conical or ogive shape
+    % INPUTS:
+    %   - D     : stage diameter
+    %   - L     : stage Length
+    %   - d     : reference diameter (base of cone)
+    %   - alpha : rocket angle of attack
+    % RETURN:
+    %   - cna   : NACD [1/rad]
+    
+    % check d
+    if isnan(d) || d <=0
+       error(['Reference diameter d is not defined yet or has a',...
+       'value of 0. Define a nose cone with non-zero base diameter.']);
+    end
+    
+    cna = 1.1*(D*L)/(pi*d^2/4)*sind(alpha)^2/alpha;
+end
+
+function cna = cna_transition(d, d1, d2, alpha)
+    % cna_transition
+    % calculate NACD of a body element (shoulder, boattail, tube)
+    % INPUTS:
+    %   - d     : reference diameter (diameter at base of cone)
+    %   - d1    : diameter before transition
+    %   - d2    : diameter after transition
+    %   - alpha : rocket angle of attack
+    % RETURN:
+    %   - cna   : NACD [1/rad]    
+
+    % check d
+    if isnan(d) || d <=0
+       error(['Reference diameter d is not defined yet or has a',...
+       'value of 0. Define a nose cone with non-zero base diameter.']);
+    end
+
+    cna = 2/d^2*(d2^2-d1^2)*sind(alpha)/alpha;    
+end
+
+function CNa = cna_fins(N, rt, S, d, Cr, Ct, xt, M, Aref, theta)
+    % cna_fins
+    % calculate NACD of N (3 or 4) trapezoidal fins.
+    % INPUTS:
+    %   - N     : number of fins
+    %   - rt    : radius of body at fin attachement
+    %   - S     : span length of fin
+    %   - d     : reference diameter (diameter at base of cone)
+    %   - Cr    : fin root chord
+    %   - Ct    : fin tip chord
+    %   - xt    : longitudinal distance between leading edge of
+    %             root chord and leading edge of tip chord. [m]
+    %   - M     : Mach number
+    %   - Aref  : Reference area (Generaly nose base area)
+    %   - theta : angle of attack of fin along r axis. 
+    % RETURN:
+    %   - cna   : NACD [1/rad] 
+    
+    % check d
+    if isnan(d) || d <=0
+       error(['Reference diameter d is not defined yet or has a',...
+       'value of 0. Define a nose cone with non-zero base diameter.']);
+    end
+
+    % check for M<1
+    if (M>1)
+       error('Mach number must be < 1. Code cannot guarantee validity for supersonic speeds.'); 
+    end
+
+    % check for 1<=N<=8
+    if (N<1 || N>8)
+       error('The number of fins must be between 1 and 8.'); 
+    end
+
+   beta     = sqrt(1-M^2);
+   gammac   = atand((xt+Ct/2-Cr/2)/S); % midchord angle
+   Afin     = (Cr+Ct)/2*S; % fin Area
+   CNa1     = 2*pi*S^2/Aref/(1+sqrt(1+(beta*S^2/(Afin*cosd(gammac))^2))); % CNa for one fin
+   CNa1     = (1+rt/(rt+S))*CNa1; %corrected CNa for fin-body interference
+
+   % Multiple fins
+   if (N == 1)
+       CNa = CNa1*sind(theta)^2;
+   elseif (N == 2)
+       CNa = CNa1*(sind(theta)^2+sind(theta+180)^2);
+   elseif (N == 3)
+       CNa = CNa1*1.5*(1-0.15*cosd(3*theta/2));
+   elseif (N == 4)
+       CNa = CNa1*2*(1-0.06*cosd(2*theta));
+   elseif (N == 5)
+       CNa = 2.37*CNa1;
+   elseif (N == 6)
+       CNa = 2.74*CNa1;
+   elseif (N == 7)
+       CNa = 2.99*CNa1;
+   elseif (N == 8)
+       CNa = 3.24*CNa1;
+   end
+
+end 
