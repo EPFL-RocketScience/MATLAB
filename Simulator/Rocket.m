@@ -143,18 +143,20 @@ classdef Rocket < handle
                 error('La masse doit etre une fonction')
             end
             
-            obj.Motor.z = z;
-            obj.Motor.m = m;
-            obj.Motor.ThrustCurve = thrustCurve;
-            obj.Motor.bt = bt;
+            motor.z = z;
+            motor.m = m;
+            motor.ThrustCurve = thrustCurve;
+            motor.bt = bt;
             
             % Est-ce qu il y a des dimensions d un moteur en parametre de
             % la fonction ?
             % Calcule des proprietes de masse
             
-            obj.Motor.cm = (1/2)*L;
-            obj.Motor.Iz = @(t) m(t)*D^2/8;
-            obj.Motor.Ir = @(t) m(t)/12*(3*(D/2)^2+L^2)+m(t)*(L/2)^2;
+            motor.cm = (1/2)*L;
+            motor.Iz = @(t) m(t)*D^2/8;
+            motor.Ir = @(t) m(t)/12*(3*(D/2)^2+L^2)+m(t)*(L/2)^2;
+            
+            obj.Motor = [obj.Motor motor];
             
         end
         
@@ -312,7 +314,7 @@ classdef Rocket < handle
             m_stat = m_stat + sum([obj.Points.m]);
 
             % masse variable (masse du moteur)
-            m = (m_stat + obj.Motor.m(t));
+            m = (m_stat + sum(cellfun(@(c) c(t), {obj.Motor.m})));
 
         end
         
@@ -327,7 +329,8 @@ classdef Rocket < handle
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Points.m].*([obj.Points.z] + [obj.Points.cm]));
             
-            cm = (cm_stat + obj.Motor.m(t).*(obj.Motor.z+obj.Motor.cm))./obj.m(t);
+            Motor_m = cellfun(@(c) c(t), {obj.Motor.m});
+            cm = (cm_stat + sum(Motor_m.*([obj.Motor.z]+[obj.Motor.cm])))/obj.m(t);
         end
         
         function Iz = Iz(obj, t)
@@ -342,7 +345,7 @@ classdef Rocket < handle
             
             Iz_stat = Iz_stat + sum([obj.Payload.Iz]);
             
-            Iz = Iz_stat + obj.Motor.Iz(t);
+            Iz = Iz_stat + sum(cellfun(@(c) c(t), {obj.Motor.Iz}));
         end
         
         function Ir = Ir(obj, t)
@@ -372,8 +375,11 @@ classdef Rocket < handle
                 (CMt-[obj.Payload.z]).^2-(CMt-[obj.Payload.z]).*...
                 [obj.Payload.cm]));
             
-            Ir = Ir + obj.Motor.Ir(t) + obj.Motor.m(t)*(...
-                (CMt-obj.Motor.z)^2-(CMt-obj.Motor.z)*obj.Motor.cm);
+            Motor_m = cellfun(@(c) c(t), {obj.Motor.m});
+            Motor_Ir = cellfun(@(c) c(t), {obj.Motor.Ir});
+            
+            Ir = Ir + sum([Motor_Ir] + Motor_m.*(...
+                (CMt-[obj.Motor.z]).^2-(CMt-[obj.Motor.z]).*[obj.Motor.cm]));
         end
         
         function [CNa_tot, zCP] = aeroCoeff(obj, alpha, M, theta)
@@ -452,7 +458,8 @@ function zcp = zCP_stage(L)
     % - L   : length of stage [m]
     % RETURN:
     % - zcp : center of pressure position along z axis [m]
-    zcp = L/2;
+    %zcp = L/2;
+    zcp = 0;
 end
 
 % NORMAL AERODYNAMIC COEFFICIENT DERIVATIVES (NACD)
@@ -484,7 +491,8 @@ function cna = cna_stage(D, L, d, alpha)
        'value of 0. Define a nose cone with non-zero base diameter.']);
     end
     
-    cna = 1.1*(D*L)/(pi*d^2/4)*sind(alpha)^2/alpha;
+    %cna = 1.1*(D*L)/(pi*d^2/4)*sind(alpha)^2/alpha;
+    cna = 0;
 end
 
 function cna = cna_transition(d, d1, d2, alpha)
