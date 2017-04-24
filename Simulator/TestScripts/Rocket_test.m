@@ -3,46 +3,11 @@
 close all;
 clear all;
 
-% parameters
-rho_carbon = 1550; % kg/m^3
-data = load('HyperTEK_Mgrain.mat');
-thrustCurve = data.Tdat;
-bt = 10; % burn time
-K = 1.1; % coefficient correctif de force aerodynamique normale
-
-% Create a rocket
-R = Rocket();
-
-% nose(L, D, e, rho)
-R.nose(0.5, 0.15, 0.002, rho_carbon);
-% tail(D1, D2, L, e, z, rho)
-R.tail(0.15, 0.5, 0.2, 0.002, 2.5, rho_carbon);
-% stage(id, z, L, Dout, e, rho)
-R.stage('tube', 0.5, 2, 0.15, 0.002, rho_carbon);
-R.stage('motor', 2, 0.5, 0.15, 0.002, rho_carbon);
-% motor(id, z, m, D, L, thrustCurve, bt)
-m = @(t) (10 - 0.4*t).*(t<=bt)+6.*(t>bt);
-R.motor('grain', 2, m, 0.098, 0.5, thrustCurve, bt);
-m = @(t) (5 - 0.5*t).*(t<=bt)+0.*(t>bt);
-R.motor('tank', 2, m, 0.098, 0.5, thrustCurve, bt);
-% payload(id, z, m, L, D)
-R.payload('main', 0.8, 5, 0.3, 0.15);
-% parachute(id, z, m, D, Cd)
-R.parachute('main', 0.5, 1, 2, 1.5);
-R.parachute('secondary', 0.5, 0.5, 0.5, 0.75);
-% fins(z, N, Ct, Cr, xt, S, r, e, rho);
-R.fins(2, 4, 0.2, 0.3, 0.1, 0.1, 0.075, 0.005, rho_carbon);
-% point(id, z, m)
-R.point('tuyere', 2.5, 1);
-
-% Check definition
-R.check();
-
-% Print specs
-R.printSpecs();
+R = TestRocket();
+K = 1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
-t = linspace(0, max([R.Motor.bt])+10, 100);
+t = linspace(0, max([R.Motor.bt])+15, 100);
 for it = 1:length(t) 
    mass(it) = R.m(t(it));
    cm(it) = R.cm(t(it));
@@ -82,3 +47,31 @@ ylabel('zCP [m]');
 grid on;
 xlabel('alpha [^\circ]');
 
+drawRocket(R);
+
+% time step simulation
+figure;
+tspan = [R.Motor.ThrustCurve(1,1)+1 max(t)];
+[tsim, Xsim] = ode45(@(t, x) stateEquation(t, x, R, 10, K), tspan, [0, 5, 0, 30, 0, 0]);
+
+figure;hold on;
+title('Altitude')
+plot(tsim, Xsim(:,2));
+xlabel('t [s]');
+ylabel('z [m]');
+
+figure; hold on;
+title('Rocket Trajectory')
+plot(Xsim(:,1), Xsim(:,2));
+i_burnout = min(find(tsim>R.Motor.bt));
+plot(Xsim(i_burnout,1), Xsim(i_burnout,2), '*r');
+daspect([1 1 1]);
+quiver(Xsim(1:100:end,1), Xsim(1:100:end,2), 0.001*sin(Xsim(1:100:end, 5)), 0.001*cos(Xsim(1:100:end, 5)));
+xlabel('horizontal distance from launchpad');
+ylabel('vertical altitude');
+
+figure; hold on;
+title('Rocket angle');
+plot(tsim, Xsim(:,5));
+xlabel('t [s]');
+ylabel('\phi [rad]');

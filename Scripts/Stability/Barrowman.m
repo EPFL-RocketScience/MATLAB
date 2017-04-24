@@ -1,3 +1,5 @@
+close all
+clear all
 %** CATIA FileName
 CADFILEPATH='./DESIGN_TABLE_ROCKET_V_2.txt';
 

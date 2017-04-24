@@ -3,20 +3,20 @@ clear all
 close all
 
 % System variables
-Cd = 0.75;       % estimated drag coefficient
-mi = 2.002;        % initial mass [kg]
-mp = 0.127;     % propellant mass
+Cd = 0.85;       % estimated drag coefficient
+mi = 20.2;        % initial mass [kg]
+mp = 4;     % propellant mass
 mf = mi-mp;     % final mass
-bt = 2.37;        % burn time [s]
-S = pi*(3*0.0247)^2/4;   % exposed section [m^2]
+bt = 10;        % burn time [s]
+S = pi*(0.15)^2/4;   % exposed section [m^2]
 
 % Sim parameters
 tSpan = [0, 15];
-x0 = [700;0];
+x0 = [0;0];
 
-data = load('Thrust_Curves/Aerotech_H123W.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
+data = load('Thrust_Curves/HyperTEK_Mgrain.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
 %Tdat = data.Tdat;
-Tdat = data.data;
+Tdat = data.Tdat;
 Tdat = Tdat(find(~isnan(Tdat(:,2))), :);
 
 % Add values to thrust curve at initial time and final time 

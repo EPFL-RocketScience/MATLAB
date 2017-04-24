@@ -49,11 +49,11 @@ classdef Rocket < handle
             obj.Nose.Ir = rho*V/4*(D^2/4+2*L^2);
         
             % Calcule des proprietes aerodynamiques
-            obj.Nose.CNa = @(alpha) 2*(sin(alpha)/alpha*(alpha~=0)+(alpha==0)); % d?riv?e du coefficient aerodynamique normal
+            obj.Nose.CNa = @(alpha) 2*(sin(alpha)/(alpha*(alpha~=0)+(alpha==0))*(alpha~=0)+(alpha==0)); % d?riv?e du coefficient aerodynamique normal
             obj.Nose.zCP = 2/3*L; % position du centre de pression relatif au haut du cone
             Aplan = L*D/2;
             Aref = pi*D^2/4;
-            obj.Nose.CNaBL = @(alpha, K) K*Aplan/Aref*abs(sin(alpha)^2/alpha);
+            obj.Nose.CNaBL = @(alpha, K) K*Aplan/Aref*(abs(sin(alpha)^2/(alpha*(alpha~=0)+(alpha==0)))*(alpha~=0));
         end
         
         function tail(obj, D1, D2, L, e, z, rho)
@@ -86,11 +86,11 @@ classdef Rocket < handle
             obj.Tail.Ir = obj.Tail.Iz/2 + pi*rho*((m^2*L^5/5+1/2*m*L^4*R1+R1^2*L^3/3)-(m^2*L^5/5+1/2*m*L^4*(R1-e)+(R1-e)^2*L^3/3));
             
             % Calcule des proprietes aerodynamiques
-            obj.Tail.CNa = @(alpha) 2/obj.d^2*(D2^2-D1^2)*(sin(alpha)/alpha*(alpha~=0)+(alpha==0)); % d?riv?e du coefficient aerodynamique normal
+            obj.Tail.CNa = @(alpha) 2/obj.d^2*(D2^2-D1^2)*(sin(alpha)/(alpha*(alpha~=0)+(alpha==0))*(alpha~=0)+(alpha==0)); % d?riv?e du coefficient aerodynamique normal
             obj.Tail.zCP = L/3*(1+(1-D1/D2)/(1-(D1/D2)^2)); % position du centre de pression relatif
             Aplan = (D1+D2)/2*L;
             Aref = pi*obj.d^2/4;
-            obj.Tail.CNaBL = @(alpha, K) K*Aplan/Aref*abs(sin(alpha)^2/alpha);
+            obj.Tail.CNaBL = @(alpha, K) K*Aplan/Aref*(abs(sin(alpha)^2/(alpha*(alpha~=0)+(alpha==0)))*(alpha~=0));
         end
         
         function stage(obj, id, z, L, Dout, e, rho)
@@ -127,7 +127,7 @@ classdef Rocket < handle
             % Calcule des proprietes aerodynamiques
             Aplan = Dout*L;
             Aref = obj.d^2*pi/4;
-            stage.CNaBL = @(alpha, K) K*Aplan/Aref*abs(sin(alpha)^2/alpha); % coefficient aerodynamique normal
+            stage.CNaBL = @(alpha, K)  K*Aplan/Aref*(abs(sin(alpha)^2/(alpha*(alpha~=0)+(alpha==0)))*(alpha~=0)); % coefficient aerodynamique normal
             stage.zCPBL = L/2;
             
             obj.Stage = [obj.Stage stage];
@@ -521,7 +521,7 @@ function CNa = cna_fins(N, rt, S, d, Cr, Ct, xt, M, theta)
 
     % check for M<1
     if (M>1)
-       error('Mach number must be < 1. Code cannot guarantee validity for supersonic speeds.'); 
+       warning('Mach number must be < 1. Code cannot guarantee validity for supersonic speeds.'); 
     end
 
     % check for 1<=N<=8
@@ -532,7 +532,7 @@ function CNa = cna_fins(N, rt, S, d, Cr, Ct, xt, M, theta)
    beta     = sqrt(1-M^2);
    gammac   = atan((xt+Ct/2-Cr/2)/S); % midchord angle
    Afin     = (Cr+Ct)/2*S; % fin Area
-   CNa1     = 2*pi*S^2/Aref/(1+sqrt(1+(beta*S^2/(Afin*cos(gammac))^2))); % CNa for one fin
+   CNa1     = 2*pi*S^2/Aref/(1+sqrt(1+(beta*S^2/(Afin*cos(gammac)))^2)); % CNa for one fin
    CNa1     = (1+rt/(rt+S))*CNa1; %corrected CNa for fin-body interference
 
    % Multiple fins
