@@ -6,7 +6,7 @@ classdef Rocket < handle
         Tail
         Fins
         Motor
-        Payload
+        Cylinder
         Parachute
         Point
         
@@ -133,46 +133,84 @@ classdef Rocket < handle
             obj.Stage = [obj.Stage stage];
         end
         
-        function motor(obj, id, z, m, D, L, thrustCurve, bt)
+        function motor(obj, id, z, D, L, e, m, mp, rho, thrustCurve, bt)
             % payload
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
             %   - id    :   id du moteur
             %   - z     :   position du haut du moteur
-            %   - m     :   masse
             %   - D     :   Diametre externe du moteur
             %   - L     :   longueur du moteur
+            %   - e     :   epaisseur de la paroi 
+            %   - m     :   masse initiale
+            %   - mp    :   masse du combustible
+            %   - rho   :   densite du combustible
             %   - thrustCurve
             %           :   Courbe de poussee (N vs. s)
             %   - bt    :   temps de combustion (s)
             
-            if(~isa(m, 'function_handle'))
-                error('La masse doit etre une fonction')
-            end
-            
             motor.id = id;
             motor.z = z;
-            motor.m = m;
+            motor.D = D;
+            motor.L = L;
+            motor.e = e;
+            motor.m = @(t)(m - mp/bt*t)*(t<=bt)+(m-mp)*(t>bt);
+            motor.mp = mp;
             motor.ThrustCurve = thrustCurve;
             motor.bt = bt;
             
-            % Est-ce qu il y a des dimensions d un moteur en parametre de
-            % la fonction ?
             % Calcule des proprietes de masse
             
-            motor.cm = (1/2)*L;
-            motor.Iz = @(t) m(t)*D^2/8;
-            motor.Ir = @(t) m(t)/12*(3*(D/2)^2+L^2)+m(t)*(L/2)^2;
+            rho_shell = (m-mp)/(L*pi/4*(D^2-(D-2*e)^2));
+            rho_prop = rho;
+            
+            if strcmp(id,'motor')
+                % le moteur se consume radialement
+                
+                motor.cm = @(t) L/2;
+                Din = @(t) sqrt((D-e)^2-4*motor.m(t)/L/rho/pi);
+                % Check inner diameter 
+                if ~isreal(Din(0))
+                    error(['Le volume du combustible depasse la place disponible. Solution: reduire la masse de combustible ou augmenter sa densite.',...
+                            'Le Diametre interne depasse de ', num2str(imag(Din(0))) ' m']);
+                end
+                motor.Iz = @(t) pi*rho_shell*L/2*((D/2)^4-(D/2-e)^4)...
+                                + pi*rho_prop*L/2*((D/2-e)^4-(Din(t))^4);
+                motor.Ir = @(t) pi*rho_shell*L/12*(3*((D/2)^4-(D/2-e)^4)...
+                                + L^2*((D/2)^2-(D/2-e)^2))...
+                                + pi*rho_prop*L/12*(3*((D/2-e)^4-(Din(t))^4)...
+                                + L^2*((D/2-e)^2-(Din(t))^2));
+                            
+            elseif strcmp(id,'tank')
+                % le reservoir se vide de haut en bas. 
+                
+                h = @(t) 4*motor.m(t)/rho/pi/(D-2*e)^2;
+                cm_shell = L/2*(m-mp);
+                cm_prop  = @(t) (L - h/2)*(motor.m(t)-m+mp);
+                motor.cm = @(t) cm_shell + cm_prop(t);
+                motor.Iz = @(t) pi*rho_shell*L/2*((D/2)^4-(D/2-e)^4)...
+                                + pi*rho_prop*h(t)/2*((D/2-e)^4);
+                Ir_shell = pi*rho_shell*L/12*(3*((D/2)^4-(D/2-e)^4)...
+                           + L^2*((D/2)^2-(D/2-e)^2));
+                Ir_prop  = @(t) (motor.m(t)-m+mp)/12*(3*(D/2-e)^2+h(t)^2);
+                motor.Ir = @(t) Ir_prop(t) + (motor.cm(t)-cm_prop(t))^2*(motor.m(t)-m+mp)...
+                                + Ir_shell + (motor.cm(t)-cm_shell)^2*(m-mp);
+                            
+            else
+                
+                error('Motor element must either be a motor or a tank.')
+                
+            end
+           
             
             obj.Motor = [obj.Motor motor];
             
         end
         
-        function payload(obj, id, z, m, L, D)
-            % payload
-            % Calcule la masse, le centre de masse, le centre de pression,
-            % le coefficient aerodynamique, les moments d'inertie
+        function cylinder(obj, id, z, m, L, D)
+            % cylinder
+            % Calcule la masse, le centre de masse, les moments d'inertie
             % INPUTS
             %   - id    :   id du payload (string)
             %   - z     :   position du haut de la payload
@@ -181,18 +219,18 @@ classdef Rocket < handle
             %   - D     :   diametre de la paylaod
             
             % Assignation des proprietes
-            payload.id = id;
-            payload.z = z;
-            payload.m = m;
-            payload.L = L;
-            payload.D = D;
+            cylinder.id = id;
+            cylinder.z = z;
+            cylinder.m = m;
+            cylinder.L = L;
+            cylinder.D = D;
             
             % Calcule des proprietes de masse
-            payload.cm = (1/2)*L;
-            payload.Iz = m*D^2/8;
-            payload.Ir = m/12*(3*(D/2)^2+L^2)+m*(L/2)^2;
+            cylinder.cm = (1/2)*L;
+            cylinder.Iz = m*D^2/8;
+            cylinder.Ir = m/12*(3*(D/2)^2+L^2)+m*(L/2)^2;
             
-            obj.Payload = [obj.Payload payload];
+            obj.Cylinder = [obj.Cylinder cylinder];
         end
         
         function parachute(obj, id, z, m, D, Cd)
@@ -318,7 +356,7 @@ classdef Rocket < handle
             m_stat = m_stat + sum([obj.Stage.m]);
             m_stat = m_stat + obj.Tail.m;
             m_stat = m_stat + obj.Fins.m;
-            m_stat = m_stat + sum([obj.Payload.m]);
+            m_stat = m_stat + sum([obj.Cylinder.m]);
             m_stat = m_stat + sum([obj.Parachute.m]);
             m_stat = m_stat + sum([obj.Point.m]);
 
@@ -338,12 +376,13 @@ classdef Rocket < handle
             cm_stat = cm_stat + sum([obj.Stage.m].*([obj.Stage.z] + [obj.Stage.cm]));
             cm_stat = cm_stat + obj.Tail.m*(obj.Tail.z+obj.Tail.cm);
             cm_stat = cm_stat + obj.Fins.m*obj.Fins.N*(obj.Fins.z+obj.Fins.cmz);
-            cm_stat = cm_stat + sum([obj.Payload.m].*([obj.Payload.z] + [obj.Payload.cm]));
+            cm_stat = cm_stat + sum([obj.Cylinder.m].*([obj.Cylinder.z] + [obj.Cylinder.cm]));
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Point.m].*([obj.Point.z] + [obj.Point.cm]));
             
             Motor_m = cellfun(@(c) c(t), {obj.Motor.m});
-            cm = (cm_stat + sum(Motor_m.*([obj.Motor.z]+[obj.Motor.cm])))/obj.m(t);
+            Motor_cm = cellfun(@(c) c(t), {obj.Motor.cm});
+            cm = (cm_stat + sum(Motor_m.*([obj.Motor.z]+Motor_cm)))/obj.m(t);
         end
         
         function Iz = Iz(obj, t)
@@ -361,7 +400,7 @@ classdef Rocket < handle
                 obj.Fins.m*(2*obj.Fins.cmr*obj.Fins.r+ obj.Fins.r^2));
             % moment calculation
             
-            Iz_stat = Iz_stat + sum([obj.Payload.Iz]);
+            Iz_stat = Iz_stat + sum([obj.Cylinder.Iz]);
             
             Iz = Iz_stat + sum(cellfun(@(c) c(t), {obj.Motor.Iz}));
         end
@@ -377,9 +416,8 @@ classdef Rocket < handle
             CMt = obj.cm(t);
             
             Ir = obj.Nose.Ir + obj.Nose.m*(CMt.^2-CMt*obj.Nose.cm);
-            Ir = Ir + sum([obj.Stage.Ir] + [obj.Stage.m].*(...
-                (CMt-[obj.Stage.z]).^2-(CMt-[obj.Stage.z]).*...
-                [obj.Stage.cm]));
+            Ir = Ir + sum([obj.Stage.Ir] + [obj.Stage.m].*...
+                    (CMt-[obj.Stage.z]-[obj.Stage.cm]).^2);
             Ir = Ir + obj.Tail.Ir + obj.Tail.m*(...
                 (CMt-obj.Tail.z)^2-(CMt-obj.Tail.z)*obj.Tail.cm);
             
@@ -392,15 +430,16 @@ classdef Rocket < handle
                 (CMt-obj.Fins.z)^2-(CMt-obj.Fins.z)*obj.Fins.cmz);
             end
             
-            Ir = Ir + sum([obj.Payload.Ir] + [obj.Payload.m].*(...
-                (CMt-[obj.Payload.z]).^2-(CMt-[obj.Payload.z]).*...
-                [obj.Payload.cm]));
+            Ir = Ir + sum([obj.Cylinder.Ir] + [obj.Cylinder.m].*(...
+                (CMt-[obj.Cylinder.z]).^2-(CMt-[obj.Cylinder.z]).*...
+                [obj.Cylinder.cm]));
             
             Motor_m = cellfun(@(c) c(t), {obj.Motor.m});
             Motor_Ir = cellfun(@(c) c(t), {obj.Motor.Ir});
+            Motor_cm = cellfun(@(c) c(t), {obj.Motor.cm});
             
-            Ir = Ir + sum([Motor_Ir] + Motor_m.*(...
-                (CMt-[obj.Motor.z]).^2-(CMt-[obj.Motor.z]).*[obj.Motor.cm]));
+            Ir = Ir + sum(Motor_Ir + Motor_m.*...
+                (CMt-[obj.Motor.z]-Motor_cm).^2);
         end
         
         function [CNa_tot, zCP] = aeroCoeff(obj, alpha, M, theta, K)
@@ -447,8 +486,8 @@ classdef Rocket < handle
                 warning('No fins defined.');
             elseif(isempty(obj.Motor))
                 error('Must define a motor.');            
-            elseif(isempty(obj.Payload))
-                warning('No payload defined.');
+            elseif(isempty(obj.Cylinder))
+                warning('No Cylinder defined.');
             elseif(isempty(obj.Parachute))
                 warning('No parachute defined.');
             elseif(isempty(obj.Point))
@@ -483,15 +522,17 @@ classdef Rocket < handle
            display(['* m0   : ' num2str(m0) ' [kg]']);
            
            % propellant weights
-           mp = 0;
-           display('* propellant weights :');
+           display('* propellant masses :');
            for motor = obj.Motor
-               mp_tmp = motor.m(0) - motor.m(motor.bt);
-               display(['** ' motor.id ' : ' num2str(mp_tmp) ' [kg]']);
-               mp = mp + mp_tmp;
+               display(['** ' motor.id ' : ' num2str(motor.mp) ' [kg]']);
            end
-           display('* total propellant weight');
-           display(['** mp   : ' num2str(mp) ' [kg]']);
+           display('* total propellant mass');
+           display(['** mp   : ' num2str(sum([obj.Motor.mp])) ' [kg]']);
+           
+           % static margin
+           display('* stabililty margin');
+           [~, zcp] = obj.aeroCoeff(0, 0, 0, 0);
+           display(['* ' num2str((zcp-obj.cm(0))/obj.d) ' calibers'])
         end
     end
 end

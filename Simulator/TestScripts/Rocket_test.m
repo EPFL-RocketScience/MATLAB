@@ -51,8 +51,8 @@ drawRocket(R);
 
 % time step simulation
 figure;
-tspan = [R.Motor.ThrustCurve(1,1)+1 max(t)];
-[tsim, Xsim] = ode45(@(t, x) stateEquation(t, x, R, 10, K), tspan, [0, 5, 0, 30, 0, 0]);
+tspan = [R.Motor.ThrustCurve(1,1) max(t)];
+[tsim, Xsim, alpha] = Simulate( R, 10, K, tspan);
 
 figure;hold on;
 title('Altitude')
@@ -75,3 +75,9 @@ title('Rocket angle');
 plot(tsim, Xsim(:,5));
 xlabel('t [s]');
 ylabel('\phi [rad]');
+
+figure; hold on;
+title('Angle of attack');
+plot(tsim, alpha);
+xlabel('t [s]');
+ylabel('\alpha [rad]');

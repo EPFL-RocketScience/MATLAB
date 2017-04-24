@@ -20,19 +20,20 @@ function deriv = stateEquation(t, x, R, V0, K)
     
     % d?finition des constantes
     
+    % debug?
     debug = 0;
     
-    % matrice de rotation: fus?e -> terrestre
+    % matrice de rotation: fusee -> terrestre
     Q = [cos(phi), sin(phi); -sin(phi), cos(phi)];
     
-    % d?rivation discr?te
-    % ?tape de temps de d?rivation
+    % derivation discrete
+    % etape de temps de derivation
     dt = 0.1;
         
     % environnement 
-    % gravit?
+    % gravite
     g = 9.8;
-    % ?tat de l'air
+    % etat de l'air
     %   - T     : temp?rature
     %   - a     : vitesse du son
     %   - p     : pression statique
@@ -44,14 +45,14 @@ function deriv = stateEquation(t, x, R, V0, K)
     % Nombre de Mach
     M = sqrt(Vx^2+Vz^2)/a;
     
-    % Propri?t?s g?om?triques
-    % diam?tre de r?f?rence
+    % Proprietes geometriques
+    % diametre de reference
     d = R.d;
-    % Aire de r?f?rence
+    % Aire de reference
     Aref = pi*d^2/4;
     L = R.Tail.z+R.Tail.L;
     
-    % Propri?t?s de masse
+    % Proprietes de masse
     bt = max([R.Motor.bt]);
     m = R.m(t);
     if(t==0)
@@ -71,7 +72,7 @@ function deriv = stateEquation(t, x, R, V0, K)
     end
     CM = R.cm(t);
     
-    % Propri?t?s aerodynamiques
+    % Proprietes aerodynamiques
     % angle de rotation
     theta = 0;
     % angle d'attaque
@@ -79,9 +80,8 @@ function deriv = stateEquation(t, x, R, V0, K)
     if(norm(Vi) == 0)
         alpha = 0;
     else
-        %alpha = acos(a'*-Vi/norm(Vi));
-        alpha = atan2(cross([a;0],[-Vi;0]),dot(a,-Vi));
-        alpha = alpha(3);
+        cr = cross([a;0],[-Vi;0]);
+        alpha = atan2(cr(3),dot(a,-Vi));
     end
     % coefficient de force normale et position du centre de pouss?e
     [CNa, CP] = R.aeroCoeff(alpha, M, theta, K);
@@ -91,7 +91,7 @@ function deriv = stateEquation(t, x, R, V0, K)
     CD = 0.85; % TODO: define CD
     D = 0.5*rho*norm(Vi)^2*Aref*CD;
     
-    % Propri?t?s du moteur
+    % Proprietes du moteur
     if(t<R.Motor.ThrustCurve(1,1))
         Ft = 0;
     elseif(t<R.Motor.ThrustCurve(end,1));
