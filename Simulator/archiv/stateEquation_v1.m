@@ -24,7 +24,7 @@ function deriv = stateEquation(t, x, R, V0)
     dt = 0.1;
         
     % environnement 
-    % gravit?
+    % gravite
     g = 9.8;
     % ?tat de l'air
     %   - T     : temp?rature
