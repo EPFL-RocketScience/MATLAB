@@ -20,13 +20,13 @@ R.tail(0.15, 0.12, 0.08, 0.002, 3, rho_carbon);
 R.motor('motor', 2.5, 0.098, 0.75, 1e-3, 9.037, 4.237, 1772, thrustCurve, bt);
 % payload(id, z, m, L, D)
 R.cylinder('main payload', 0.5, 8, 0.3, 0.15);
-% parachute(id, z, m, D, Cd)
-R.parachute('main', 0.3, 1, 2, 1.5);
-R.parachute('secondary', 0.5, 0.5, 0.5, 0.75);
+% parachute(id, z, L, m, D, Cd)
+R.parachute('main', 0.3, 0.1, 1, 2, 1.5);
+R.parachute('secondary', 0.5, 0.1, 0.5, 0.5, 0.75);
 % fins(z, N, Ct, Cr, xt, S, r, e, rho);
 R.fins(2.65, 3, 0.2, 0.35, 0.15, 0.15, 0.075, 0.005, rho_carbon);
-% point(id, z, m)
-R.point('tuyere', 2.9, 1);
+% point(id, z, L, m)
+R.point('tuyere', 2.9, 0.2, 1);
 
 % Check definition
 R.check();

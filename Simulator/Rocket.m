@@ -233,13 +233,14 @@ classdef Rocket < handle
             obj.Cylinder = [obj.Cylinder cylinder];
         end
         
-        function parachute(obj, id, z, m, D, Cd)
+        function parachute(obj, id, z, L, m, D, Cd)
             % parachutee
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
             %   - id    :   id du parachute
             %   - z     :   emplacement du parachute
+            %   - L     :   longueure du parachute pli?
             %   - m     :   masse du parachute
             %   - D     :   diametre du parachute ouvert
             %   - Cd    :   Coefficient de trainee
@@ -247,6 +248,7 @@ classdef Rocket < handle
             % Assignation des proprietes
             parachute.id = id;
             parachute.z = z;
+            parachute.L = L;
             parachute.m = m;
             parachute.D = D;
             parachute.Cd = Cd;
@@ -322,18 +324,20 @@ classdef Rocket < handle
             obj.Fins.zCP = xt/3*(Cr+2*Ct)/(Cr+Ct) + 1/6*((Cr+Ct)-(Cr*Ct)/(Cr+Ct)); % position du centre de pression relatif SUR LE FINS
         end
         
-        function point(obj, id, z, m)
+        function point(obj, id, z, L, m)
             % point materiel
             % Calcule la masse, le centre de masse, les moments d'inertie
             % INPUTS
             %   - id    :   id de la masse (string)
             %   - z     :   position de la masse
+            %   - L     :   longueure r?elle de l'?l?ment de masse
             %   - m     :   masse (i.e. equilibrage, d?placememtn centre de
             %   gravite)
             
             % Assignation des proprietes
             point.id = id;
             point.z = z;
+            point.L = L;
             point.m = m;
             
             % Calcule des proprietes de masse
@@ -534,6 +538,29 @@ classdef Rocket < handle
            [~, zcp] = obj.aeroCoeff(0, 0, 0, 0);
            display(['* ' num2str((zcp-obj.cm(0))/obj.d) ' calibers'])
         end
+        
+        function m = getAll_m(obj, t)
+            % retourne toutes les masses dans un ordre arbitraire, mais le
+            % meme que getAll_z et getAll_l
+            Motor_m = cellfun(@(c) c(t), {obj.Motor.m}); 
+            m = [obj.Nose.m, [obj.Stage.m], obj.Tail.m, obj.Fins.m,...
+                Motor_m, [obj.Cylinder.m], [obj.Parachute.m], [obj.Point.m]];
+        end
+        
+        function z = getAll_z(obj)
+            % retourne toutes les positions dans un ordre arbitraire, mais le
+            % meme que getAll_m et getAll_l
+            z = [0, [obj.Stage.z], obj.Tail.z, obj.Fins.z,...
+                [obj.Motor.z], [obj.Cylinder.z], [obj.Parachute.z], [obj.Point.z]];
+        end
+        
+        function l = getAll_l(obj)
+            % retourne toutes les positions dans un ordre arbitraire, mais le
+            % meme que getAll_m et getAll_l
+            l = [obj.Nose.L, [obj.Stage.L], obj.Tail.L, obj.Fins.Cr,...
+                [obj.Motor.L], [obj.Cylinder.L], [obj.Parachute.L], [obj.Point.L]];
+        end
+        
     end
 end
 

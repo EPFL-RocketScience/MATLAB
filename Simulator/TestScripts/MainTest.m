@@ -1,4 +1,4 @@
-% Test Rocket class
+% Test Rocket class and simulator
 
 close all;
 clear all;
@@ -50,9 +50,10 @@ xlabel('alpha [^\circ]');
 drawRocket(R);
 
 % time step simulation
-figure;
 tspan = [R.Motor.ThrustCurve(1,1) max(t)];
-[tsim, Xsim, alpha] = Simulate( R, 10, K, tspan);
+tquer = [1 3 5 7 tspan(2)];
+xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
+[tsim, Xsim, alpha, T, M] = Simulate( R, -10, K, tspan, tquer, xquer);
 
 figure;hold on;
 title('Altitude')
@@ -81,3 +82,10 @@ title('Angle of attack');
 plot(tsim, alpha);
 xlabel('t [s]');
 ylabel('\alpha [rad]');
+
+figure; hold on;
+title('Flexion load');
+plot(xquer, M);
+legend(['t = ' num2str(tquer(1))], ['t = ' num2str(tquer(2))], ['t = ' num2str(tquer(3))], ['t = ' num2str(tquer(4))], ['t = ' num2str(tquer(5))])
+xlabel('x [m]');
+ylabel('M(x) [Nm]');

@@ -1,19 +1,35 @@
-function [tsim, Xsim, alpha] = Simulate( R, V0, K, tspan)
+function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
 %SIMULATE effectue la simulation de la fusee
 %   INPUTS :
 %       - R     : objet 'Rocket'
 %       - V0    : vitesse du vent [m/s]
 %       - K     : coefficient de correction pour la portance des corps
 %       - tspan : interval de temps de la simulation [t_start t_end]
+%       - tquer : times at which special calculations should be done (flexion)
+%       - xquer : positions along rocket where special calculation values
+%                 are requested.
 %   OUTPUTS :
 %       - tsim  : etapes de temps d'integration
 %       - Xsim  : etat du system a chaque etape
 %       - alpha : angle d'attaque
+%       - T     : shear values at query points and query times
+%       - M     : flexion values at query points and query times
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Global simulation variables
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % acceleration
+    Vx_dot = 0;
+    Vz_dot = 0;
+    % angle of attack
     alpha_tmp = 0;
     alpha = [];
-
+    % remember last query time
+    tquer_i = 1;
+    % initialize shear and flexion matrices
+    T = zeros(length(tquer), length(xquer));
+    M = zeros(length(tquer), length(xquer));
+    
     % integrator options
     options = odeset('OutputFcn', @output,...
                      'Refine', 1);
@@ -51,16 +67,14 @@ function [tsim, Xsim, alpha] = Simulate( R, V0, K, tspan)
         % gravite
         g = 9.8;
         % etat de l'air
-        %   - T     : temp?rature
         %   - a     : vitesse du son
-        %   - p     : pression statique
         %   - rho   : densit?
         [~, a, ~, rho] = stdAtmos(Z);
         % vent relatif (incident) 
         Vi = [V0 - Vx; -Vz];
 
         % Nombre de Mach
-        M = sqrt(Vx^2+Vz^2)/a;
+        Mach = sqrt(Vx^2+Vz^2)/a;
 
         % Proprietes geometriques
         % diametre de reference
@@ -101,7 +115,7 @@ function [tsim, Xsim, alpha] = Simulate( R, V0, K, tspan)
             alpha_tmp = atan2(cr(3),dot(a,-Vi));
         end
         % coefficient de force normale et position du centre de pouss?e
-        [CNa, CP] = R.aeroCoeff(alpha_tmp, M, theta, K);
+        [CNa, CP] = R.aeroCoeff(alpha_tmp, Mach, theta, K);
         % force normale
         N = 0.5*rho*norm(Vi)^2*Aref*CNa*alpha_tmp;
         % force de train?e
@@ -151,11 +165,29 @@ function [tsim, Xsim, alpha] = Simulate( R, V0, K, tspan)
     % status = output(t, x, flag) function is called each time integrator
     % does a valid step.
     
+        % as long as status = 0, ode45 will keep on runing... can be used
+        % to create a stop condition.
         status = 0;
 
         % at initialization, and after each succesful step
         if isempty(flag) || strcmp(flag, 'init')
-           alpha(end+1) = alpha_tmp;
+            
+            % calculate angle of attack
+            alpha(end+1) = alpha_tmp;
+            
+            % calculate flexion
+            if(t>=tquer(tquer_i))
+                Q = [cos(x(5)), sin(x(5)); -sin(x(5)), cos(x(5))];
+                a = Q*[Vx_dot; Vz_dot+9.8];
+                m = R.getAll_m(t(end));
+                z = R.getAll_z();
+                l = R.getAll_l();
+                [T(tquer_i,:), M(tquer_i,:)] = Flexion(m', l', z', xquer, a(1), xquer(end));
+                
+                % increment query time index
+                tquer_i = tquer_i + 1;
+            end
+            
         end
 
     end 
