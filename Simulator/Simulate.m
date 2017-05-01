@@ -1,4 +1,4 @@
-function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
+function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lramp, tquer, xquer)
 %SIMULATE effectue la simulation de la fusee
 %   INPUTS :
 %       - R     : objet 'Rocket'
@@ -12,6 +12,8 @@ function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
 %       - tsim  : etapes de temps d'integration
 %       - Xsim  : etat du system a chaque etape
 %       - alpha : angle d'attaque
+%       - calibre 
+%               : calibres entre le CM et le CP 
 %       - T     : shear values at query points and query times
 %       - M     : flexion values at query points and query times
 
@@ -24,21 +26,35 @@ function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
     % angle of attack
     alpha_tmp = 0;
     alpha = [];
+    % calibres
+    calibre_temp = 0;
+    calibre = [];
     % remember last query time
     tquer_i = 1;
     % initialize shear and flexion matrices
     T = zeros(length(tquer), length(xquer));
     M = zeros(length(tquer), length(xquer));
     
-    % integrator options
-    options = odeset('OutputFcn', @output,...
+    % integrator options launch
+    options_launch = odeset('Events',@events,'OutputFcn',@odeplot, 'OutputFcn', @output,...
+                     'Refine', 1);
+     tspan_launch = [0, 10];
+    
+    % integrator options flight
+    options_flight = odeset('OutputFcn', @output,...
                      'Refine', 1);
     
     % integration
-    [tsim, Xsim] = ode45(@(t, x) stateEquation(t, x, R, V0, K), tspan, [0, 0, 0, 0, 0, 0], options);
+    x0_launch = [0, 0, 0, 0, phi0, 0];
+    [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, K, 0), tspan_launch, x0_launch, options_launch);
+    tspan_flight = [tsim_launch(end), tfin];
+    [tsim_flight, Xsim_flight] = ode45(@(t, x) stateEquation(t, x, R, V0, K, 1), tspan_flight, Xsim_launch(end, :), options_flight);
     
+    % output
+    tsim = [tsim_launch; tsim_flight];
+    Xsim = [Xsim_launch; Xsim_flight];
     
-    function deriv = stateEquation(t, x, R, V0, K)
+    function deriv = stateEquation(t, x, R, V0, K, phase)
     % deriv = stateEquation(t, x, R, V0, K) Equation d'etat pour
     % l'integration
 
@@ -140,14 +156,29 @@ function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
         Force_G = [sin(phi); -cos(phi)]*m*g;
 
         % Equation d'?tat
+        % launch
+        if phase == 0
+        
+            X_dot   = Vx;
+            Z_dot   = Vz;
+            V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
+            Vx_dot  = V_dot(1);
+            Vz_dot  = V_dot(2);
+            phi_dot = 0;
+            phi_ddot= 0;
+        
+        % flight    
+        elseif phase == 1
+        
+            X_dot   = Vx;
+            Z_dot   = Vz;
+            V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
+            Vx_dot  = V_dot(1);
+            Vz_dot  = V_dot(2);
+            phi_dot = phi_dot;
+            phi_ddot= -((N+D*sin(alpha_tmp))*(CP-CM)+sin(epsilon)*Ft*(L-CM)+Ir_dot*phi_dot)/Ir;
 
-        X_dot   = Vx;
-        Z_dot   = Vz;
-        V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
-        Vx_dot  = V_dot(1);
-        Vz_dot  = V_dot(2);
-        phi_dot = phi_dot;
-        phi_ddot= -((N+D*sin(alpha_tmp))*(CP-CM)+sin(epsilon)*Ft*(L-CM)+Ir_dot*phi_dot)/Ir;
+        end
 
         deriv = [X_dot Z_dot Vx_dot Vz_dot phi_dot phi_ddot]';
 
@@ -174,9 +205,10 @@ function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
             
             % calculate angle of attack
             alpha(end+1) = alpha_tmp;
+            calibre(end+1) = calibre_temp;
             
             % calculate flexion
-            if(t>=tquer(tquer_i))
+            if(tquer_i<=length(tquer) & t>=tquer(tquer_i))
                 Q = [cos(x(5)), sin(x(5)); -sin(x(5)), cos(x(5))];
                 a = Q*[Vx_dot; Vz_dot+9.8];
                 m = R.getAll_m(t(end));
@@ -191,6 +223,16 @@ function [tsim, Xsim, alpha, T, M] = Simulate( R, V0, K, tspan, tquer, xquer)
         end
 
     end 
+
+    function [value,isterminal,direction] = events(tsim, Xsim)
+        %fonction qui gere l'?venement
+        
+        verif = sqrt(Xsim(1)^2+Xsim(2)^2)-lramp;%taille rampe
+        value = [verif, verif, 0, 0, 0, 0]; % On verifie pour x et z
+        isterminal = [1, 1, 0, 0, 0, 0]; % stop the integration
+        direction = [0, 0, 0, 0, 0, 0]; % negative direction
+        
+    end
 
 end
 

@@ -3,7 +3,7 @@
 close all;
 clear all;
 
-R = RocketJuju();
+R = TestRocket();
 K = 1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
@@ -50,10 +50,12 @@ xlabel('alpha [^\circ]');
 drawRocket(R);
 
 % time step simulation
-tspan = [R.Motor.ThrustCurve(1,1) max(t)];
-tquer = [1 3 5 7 tspan(2)];
+tfin = 25;
+phi0 = 3*pi/180;
+tquer = [1 3 5 7 8];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
-[tsim, Xsim, alpha, T, M] = Simulate( R, 1, K, tspan, tquer, xquer);
+L_ramp = 5;
+[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, 10, K, tfin, phi0, L_ramp, tquer, xquer);
 
 figure;hold on;
 title('Altitude')
@@ -82,6 +84,12 @@ title('Angle of attack');
 plot(tsim, alpha);
 xlabel('t [s]');
 ylabel('\alpha [rad]');
+
+figure; hold on;
+title('Stabiltie statique lors du vol');
+plot(tsim, calibre);
+xlabel('t [s]');
+ylabel('Calibre [-]');
 
 figure; hold on;
 title('Flexion load');
