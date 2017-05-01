@@ -148,6 +148,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         end
         epsilon = 0;
 
+        %Calcul du calibre
+        calibre_temp = (CP-CM)/d;
+        
         % Forces dans le repere (n, a)
         % Poussee
         Force_T = [sin(epsilon); cos(epsilon)]*Ft;
