@@ -438,6 +438,10 @@ classdef Rocket < handle
                 (CMt-[obj.Cylinder.z]).^2-(CMt-[obj.Cylinder.z]).*...
                 [obj.Cylinder.cm]));
             
+            Ir = Ir + sum([obj.Parachute.m].*(CMt-[obj.Parachute.z]).^2);
+            
+            Ir = Ir + sum([obj.Point.m].*(CMt-[obj.Point.z]).^2);
+            
             Motor_m = cellfun(@(c) c(t), {obj.Motor.m});
             Motor_Ir = cellfun(@(c) c(t), {obj.Motor.Ir});
             Motor_cm = cellfun(@(c) c(t), {obj.Motor.cm});

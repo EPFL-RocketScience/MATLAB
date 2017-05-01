@@ -3,7 +3,7 @@
 close all;
 clear all;
 
-R = TestRocket();
+R = RocketJuju();
 K = 1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
@@ -53,7 +53,7 @@ drawRocket(R);
 tspan = [R.Motor.ThrustCurve(1,1) max(t)];
 tquer = [1 3 5 7 tspan(2)];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
-[tsim, Xsim, alpha, T, M] = Simulate( R, -10, K, tspan, tquer, xquer);
+[tsim, Xsim, alpha, T, M] = Simulate( R, 1, K, tspan, tquer, xquer);
 
 figure;hold on;
 title('Altitude')
