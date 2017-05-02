@@ -4,6 +4,8 @@ close all;
 clear all;
 
 R = TestRocket();
+%R = RocketJuju();
+
 K = 1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
