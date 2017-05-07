@@ -3,7 +3,7 @@
 close all;
 clear all;
 
-R = TestRocket();
+R = RocketJuju();
 K = 1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
@@ -15,21 +15,23 @@ for it = 1:length(t)
    Ir(it) = R.Ir(t(it));
 end
 figure
-subplot(4,1,1)
+subplot(5,1,1)
 plot(t, mass);
 title('Mass properties');
 ylabel('m [kg]');
-subplot(4,1,2)
+subplot(5,1,2)
 plot(t, cm);
 ylabel('CM [m]');
-subplot(4,1,3)
+subplot(5,1,3)
 plot(t, Iz);
 ylabel('Iz [kg*m^2]');
-subplot(4,1,4)
+subplot(5,1,4)
 plot(t, Ir);
 ylabel('Ir [kg*m^2]');
+subplot(5, 1, 5)
+plot(R.Motor.ThrustCurve(1:end-1,1), R.Motor.ThrustCurve(1:end-1,2));  
+ylabel('Ft [N]');
 xlabel('t [s]');
-
 
 alpha = linspace(-30, 30, 100)*pi/180;
 figure
@@ -50,8 +52,8 @@ xlabel('alpha [^\circ]');
 drawRocket(R);
 
 % time step simulation
-tfin = 25;
-phi0 = 3*pi/180;
+tfin = 11;
+phi0 = 0;
 tquer = [1 3 5 7 8];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
 L_ramp = 5;

@@ -5,9 +5,9 @@ rho_polystyr    = 1050; % kg/m^3
 rho_kraft       = 950;
 rho_birch       = 630;
 
-data = load('Aerotech_H148R.mat');
-thrustCurve = data.data;
-bt = 1.48; % burn time
+data = load('AeroTech_H123W.mat');
+thrustCurve = cleanThrustCurve(data.data);
+bt = 2.37; % burn time
 
 
 % Create a rocket

@@ -1,4 +1,4 @@
-function Z2 = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt)
+function [Z2, Z10, V10, qual, err, err_max] = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt)
 %BRAKEMATRIX calculate matrix containing data to select braking altitude.
 %   brakeMatrix( m, Cd, motor )
 %   INPUTS : 
@@ -13,6 +13,13 @@ function Z2 = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt)
 %       - xt    :   target altitude (m)
 %   OUTPUT :
 %       - Z2    :   matrix of query points for microcontroller
+%       - Z10   :   meshgrid of altitudes after burnout
+%       - V10   :   meshgrid of velocities after burnout
+%       - qual  :   quality of brake matrix, percentage of unusable data
+%                   points
+%       - err   :   matrix of possible errors on deployment altitude
+%       - max_err
+%               :   max error on deployment altitudes.
 
     %% 0. constants
 
@@ -23,7 +30,11 @@ function Z2 = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt)
     eta = 0.2;
     
     % 0.3 grid refinement, number of grid points
-    refine = 100; 
+    refine = 50; 
+    
+    % 0.4 environment
+    g       =   9.6;
+    rho     =   1.2;
 
     %% 1. determine plausible burnout conditions
     
@@ -58,57 +69,114 @@ function Z2 = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt)
     display(' ');
     
     % 1.5 Compose final conditions matrices
-    X10 = linspace(x10(1), x10(2), refine);
+    Z10 = linspace(x10(1), x10(2), refine);
     V10 = linspace(v10(1), v10(2), refine);
-    [X10, V10] = meshgrid(X10, V10);
+    [Z10, V10] = meshgrid(Z10, V10);
     
-    %% 2. determine t2 numerically
+    %% 2. populate deployment matrix Z2
     
-    % test numerical method
-    [x02, res, max_flag] = fixpoint(@(x02) fn_x02(x02, X10(end, end), V10(end, end), xt),...
-                                    (X10(end,end)+xt)/2, 0.1, 100);
+    Z2 = zeros(length(Z10), length(V10));
+    err = zeros(length(Z10), length(V10));
     
-    Z2 = 0;
-
-    
-    %% 3. nested functions
-    
-    function x02_out = fn_x02(x02, x01, v01, x3)
-        
-        % constantes
-        g       =   9.6;
-        rho     =   1.2;
-        
-        % variables de normalisation
-        Vinf1   =   sqrt(2*(m0-mp)*g/(rho*Cd0*Aref0));
-        tau1    =   Vinf1/g; 
-        Vinf2   =   sqrt(2*(m0-mp)*g/(rho*(Cdb*Arefb+Cd0*Aref0)));
-        
-        % normalisation des variables
-        v01n    =   v01/Vinf1;
-        
-        % valeurs de la fonction
-        V02     = Vinf2*sqrt((exp(2*g*(x3-x02)/Vinf2^2)-1));
-        t02     = tau1*(atan(v01/Vinf1)-atan(V02/Vinf1));
-        x02_out = x01 + Vinf1^2/g*log((cos(atan(v01/Vinf1)-t02/tau1))/(cos(atan(v01/Vinf1))));
-        
+    for i = 1:length(Z10)
+        for j = 1:length(V10)
+            [Z2(i,j), err(i,j)] = deployAltitude(Z10(i,j), V10(i,j), xt);     
+        end
     end
 
-    function [x,res, max_flag] = fixpoint(phi, x0, resmax, Nmax)
-        x = x0;
-        xold = x0;
-        max_flag = 0;
-        for n = 1:Nmax
-            x = phi(x);
-            res = abs(xold-x);
-            xold = x;
-            if res < resmax
-               break; 
-            elseif n >=Nmax
-               max_flag = 1;
-               break;
-            end           
+    %% 3. analyse results
+    
+    % 3.1 count invalid matrix points
+    n_invalid   =   length(find(Z2 == -1));
+    n_tot       =   prod(size(Z2));
+    qual        =   n_invalid/n_tot;
+    
+    % 3.2 max possible error
+    err_max = max(max(err));
+    
+    %% 4. nested functions
+    
+    function [x_deploy, err]  = deployAltitude(X10, V10, xt)
+        % determine min and max altitude and time to apogee
+        [x_max, t_max]  =   apogee(X10, V10, 1);
+        [x_min, t_min]  =   apogee(X10, V10, 2);
+
+        % check if target altitude is in the range
+        if (xt>x_max)
+            warning('Altitude:max', ['target altitude is too high. The max altitude is : ' num2str(x_max)]);
+            x_deploy = -1;
+            err      = -1;
+            return
+        elseif(xt<x_min)
+            warning('Altitude:min', ['target altitude is too low. The min altitude is : ' num2str(x_min)]);
+            x_deploy = -1;
+            err      = -1;
+            return
+        end  
+        
+        % test all possible values of deployment times
+        t2 = linspace(0, t_max,100);
+
+        % find apogee for deployment time values
+        [X02, V02]  = pos_speed(X10, V10, t2, 1);
+        [X3, ~]     = apogee(X02, V02, 2);
+
+        % find deployment time that gets the rocket nearest to the target
+        t2_i = find(X3>=xt, 1, 'first');
+        t_deploy = t2(t2_i); 
+
+        % compute corresponding deployment altitude
+        [x_deploy, ~] = pos_speed(X10, V10, t_deploy, 1);
+        
+        % estimate error
+        if(t2_i == 0)
+            [x_err, ~] = pos_speed(X10, V10, t2(t2_i+1), 1);
+            err = abs(x_deploy - x_err);
+        elseif(t2_i == length(t2))
+            [x_err, ~] = pos_speed(X10, V10, t2(t2_i-1), 1);
+            err = abs(x_deploy - x_err);
+        else
+            [x_errmin, ~] = pos_speed(X10, V10, t2(t2_i-1), 1);
+            [x_errmax, ~] = pos_speed(X10, V10, t2(t2_i+1), 1);
+            err = max([abs(x_deploy-x_errmin), abs(x_deploy-x_errmax)]);
         end
+        
+    end
+    
+    function [x, v] = pos_speed(x0, v0, t, phase)
+        if phase == 1
+            Vinf    =   sqrt(2*(m0-mp)*g/(rho*Cd0*Aref0));
+            tau     =   Vinf/g; 
+        elseif phase == 2
+            Vinf    =   sqrt(2*(m0-mp)*g/(rho*(Cdb*Arefb+Cd0*Aref0)));
+            tau     =   Vinf/g;
+        else
+            error('phase must either be 1 or 2')
+        end
+        
+        V0  =   v0/Vinf;
+        T   =   t/tau;
+        
+        v   =   Vinf*tan(atan(V0)-T);
+        x   =   Vinf*tau*log(cos(atan(V0)-T)/cos(atan(V0)))+x0; 
+    end
+
+    function [x, t] = apogee(x0, v0, phase)
+        
+        if phase == 1
+            Vinf    =   sqrt(2*(m0-mp)*g/(rho*Cd0*Aref0));
+            tau     =   Vinf/g; 
+        elseif phase == 2
+            Vinf    =   sqrt(2*(m0-mp)*g/(rho*(Cdb*Arefb+Cd0*Aref0)));
+            tau     =   Vinf/g;
+        else
+            error('phase must either be 1 or 2')
+        end
+        
+        V0  =   v0/Vinf;
+        
+        t   =   atan(V0)*tau;
+        x   =   -Vinf*tau*log(cos(atan(V0)))+x0;
     end
 end
 

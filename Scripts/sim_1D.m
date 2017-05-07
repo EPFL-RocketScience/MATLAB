@@ -3,9 +3,9 @@ clear all
 close all
 
 % System variables
-Cd = 0.85;       % estimated drag coefficient
-mi = 20.2;        % initial mass [kg]
-mp = 4;     % propellant mass
+Cd = 0.55;       % estimated drag coefficient
+mi = 2.264;        % initial mass [kg]
+mp = 0.345;     % propellant mass
 mf = mi-mp;     % final mass
 bt = 10;        % burn time [s]
 S = pi*(0.15)^2/4;   % exposed section [m^2]

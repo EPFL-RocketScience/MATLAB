@@ -1,7 +1,11 @@
 clear all;
 close all;
 
-Cd0 = 0.85;     % estimated drag coefficient
+% supress warnings
+warning('off', 'Altitude:max');
+warning('off', 'Altitude:min');
+
+Cd0 = 0.55;     % estimated drag coefficient
 Cdb = 1;        % estimated drag coefficient of brakes   
 m0 = 2.264;     % initial mass [kg]
 mp = 0.345;     % propellant mass [kg]
@@ -16,4 +20,16 @@ data = load('Thrust_Curves/Aerotech_H123W.mat');    % Thrust Curve data Tdat(:,1
 TC = data.data;
 TC = TC(find(~isnan(TC(:,2))), :);
 
-Z2 = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, 270);
+xt = 250; % target
+
+[Z2, X10, V10, qual, err, err_max] = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt);
+
+display('Quality of deployment matrix:');
+display([num2str(qual) '% unreachable values']);
+
+figure; hold on;
+title(['Z2 : deployment altitudes for target = ' num2str(xt) ' m']);
+surf(X10, V10, Z2);
+colorbar;
+xlabel('X1_0 [m]');
+ylabel('V1_0 [m/s]');

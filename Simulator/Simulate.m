@@ -4,7 +4,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
 %       - R     : objet 'Rocket'
 %       - V0    : vitesse du vent [m/s]
 %       - K     : coefficient de correction pour la portance des corps
-%       - tspan : interval de temps de la simulation [t_start t_end]
+%       - tfin  : temps de simulation maximal
+%       - phi0  : angle de d?part de la rampe en [rad]
+%       - lramp : longueure de la rampe de lancement [m]
 %       - tquer : times at which special calculations should be done (flexion)
 %       - xquer : positions along rocket where special calculation values
 %                 are requested.
@@ -38,7 +40,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
     % integrator options launch
     options_launch = odeset('Events',@events,'OutputFcn',@odeplot, 'OutputFcn', @output,...
                      'Refine', 1);
-     tspan_launch = [0, 10];
+    tspan_launch = [R.Motor.ThrustCurve(1,1), 10];
     
     % integrator options flight
     options_flight = odeset('OutputFcn', @output,...
@@ -147,6 +149,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
             Ft = 0;
         end
         epsilon = 0;
+        
+        %Calcul du calibre
+        calibre_temp = (CP-CM)/d;
 
         % Forces dans le repere (n, a)
         % Poussee
@@ -181,7 +186,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         end
 
         deriv = [X_dot Z_dot Vx_dot Vz_dot phi_dot phi_ddot]';
-
+        
         % debug
         if debug == 1
             feather(X_dot, Z_dot, 'b');
