@@ -38,38 +38,60 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
     M = zeros(length(tquer), length(xquer));
     
     % integrator options launch
-    options_launch = odeset('Events',@events,'OutputFcn',@odeplot, 'OutputFcn', @output,...
+    options_launch = odeset('Events',@events_launch,'OutputFcn',@odeplot, 'OutputFcn', @output,...
                      'Refine', 1);
     tspan_launch = [R.Motor.ThrustCurve(1,1), 10];
     
     % integrator options flight
     options_flight = odeset('OutputFcn', @output,...
                      'Refine', 1);
+   
     
+    %%%%%%%%%%%%%%%%%%%%%%%%         
     % integration
+    %%%%%%%%%%%%%%%%%%%%%%%%
+    
+    display('Started Sim...')
+    
+    % launch
     x0_launch = [0, 0, 0, 0, phi0, 0];
     [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, K, 0), tspan_launch, x0_launch, options_launch);
-    tspan_flight = [tsim_launch(end), tfin];
-    [tsim_flight, Xsim_flight] = ode45(@(t, x) stateEquation(t, x, R, V0, K, 1), tspan_flight, Xsim_launch(end, :), options_flight);
+    display('Cleared launch pad:');
+    display(['t = ' num2str(tsim_launch(end)) ' sec']);
+    display(['Z = ' num2str(Xsim_launch(end, 3)) ' m']);
+    
+    % propulsed flight
+    tspan_flight_withFt = [tsim_launch(end), R.Motor.ThrustCurve(end,1)];
+    [tsim_flight_withFt, Xsim_flight_withFt] = ode45(@(t, x) stateEquation(t, x, R, V0, K, 1), tspan_flight_withFt, Xsim_launch(end, :), options_flight);
+    display('Motor burnout:');
+    display(['t = ' num2str(tsim_flight_withFt(end)) ' sec']);
+    display(['Z = ' num2str(Xsim_flight_withFt(end, 3)) ' m']);
+    
+    % coasting
+    tspan_flight_withOutFt = [R.Motor.ThrustCurve(end,1), tfin];
+    [tsim_flight_withOutFt, Xsim_flight_withOutFt] = ode45(@(t, x) stateEquation(t, x, R, V0, K, 2), tspan_flight_withOutFt, Xsim_flight_withFt(end, :), options_flight);
+    display('Apogee:');
+    display(['t = ' num2str(tsim_flight_withOutFt(end)) ' sec']);
+    display(['Z = ' num2str(Xsim_flight_withOutFt(end, 3)) ' m']);
     
     % output
-    tsim = [tsim_launch; tsim_flight];
-    Xsim = [Xsim_launch; Xsim_flight];
+    tsim = [tsim_launch; tsim_flight_withFt; tsim_flight_withOutFt];
+    Xsim = [Xsim_launch; Xsim_flight_withFt; Xsim_flight_withOutFt];
     
     function deriv = stateEquation(t, x, R, V0, K, phase)
     % deriv = stateEquation(t, x, R, V0, K) Equation d'etat pour
     % l'integration
 
 
-        % d?finition des variables ? int?grer
-        X = x(1);       % position horizontale dans le rep?re terrestre
+        % definition des variables a int?grer
+        X = x(1);       % position horizontale dans le repere terrestre
         Z = x(2);       % position verticale dans le rep?re terrestre
         Vx = x(3);
         Vz = x(4);
-        phi = x(5);     % angle de rotation par rapport ? la verticale
-        phi_dot = x(6); % d?riv?e de l'angle de rotation
+        phi = x(5);     % angle de rotation par rapport a la verticale
+        phi_dot = x(6); % derive de l'angle de rotation
 
-        % d?finition des constantes
+        % definition des constantes
 
         % debug?
         debug = 0;
@@ -153,6 +175,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         %Calcul du calibre
         calibre_temp = (CP-CM)/d;
 
+        %Calcul du calibre
+        calibre_temp = (CP-CM)/d;
+        
         % Forces dans le repere (n, a)
         % Poussee
         Force_T = [sin(epsilon); cos(epsilon)]*Ft;
@@ -163,10 +188,12 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         % Equation d'?tat
         % launch
         if phase == 0
-        
+            % Force du rail sur la fusee
+            Force_R = [sin(phi); 0]*m*g; % Question est-mieux ici ou avant le if ?
+            
             X_dot   = Vx;
             Z_dot   = Vz;
-            V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
+            V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G-Force_R) - m_dot*[Vx; Vz])/m;
             Vx_dot  = V_dot(1);
             Vz_dot  = V_dot(2);
             phi_dot = 0;
@@ -178,6 +205,18 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
             X_dot   = Vx;
             Z_dot   = Vz;
             V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
+            Vx_dot  = V_dot(1);
+            Vz_dot  = V_dot(2);
+            phi_dot = phi_dot;
+            phi_ddot= -((N+D*sin(alpha_tmp))*(CP-CM)+sin(epsilon)*Ft*(L-CM)+Ir_dot*phi_dot)/Ir;
+
+              
+        % flight    
+        elseif phase == 2
+        
+            X_dot   = Vx;
+            Z_dot   = Vz;
+            V_dot   = (Q*(Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
             Vx_dot  = V_dot(1);
             Vz_dot  = V_dot(2);
             phi_dot = phi_dot;
@@ -229,8 +268,8 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
 
     end 
 
-    function [value,isterminal,direction] = events(tsim, Xsim)
-        %fonction qui gere l'?venement
+    function [value,isterminal,direction] = events_launch(tsim, Xsim)
+        %fonction qui gere l'evenement
         
         verif = sqrt(Xsim(1)^2+Xsim(2)^2)-lramp;%taille rampe
         value = [verif, verif, 0, 0, 0, 0]; % On verifie pour x et z
@@ -238,6 +277,16 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         direction = [0, 0, 0, 0, 0, 0]; % negative direction
         
     end
+
+%     function [value,isterminal,direction] = events_flight(tsim, Xsim, Ft)
+%         fonction qui gere l'evenement
+%         
+%         verif = Ft;%taille rampe
+%         value = [verif, verif, 0, 0, 0, 0]; % On verifie pour x et z
+%         isterminal = [0, 1, 0, 0, 0, 0]; % stop the integration
+%         direction = [0, 0, 0, 0, 0, 0]; % negative direction
+%         
+%     end
 
 end
 

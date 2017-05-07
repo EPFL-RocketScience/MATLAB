@@ -350,7 +350,7 @@ classdef Rocket < handle
     end
     
     methods (Access = public)
-        % ?ocket property methods
+        % rocket property methods
         
         function m = m(obj, t)
             % calcule de la masse totale
