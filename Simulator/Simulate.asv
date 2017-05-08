@@ -18,7 +18,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, V0, tfin, phi0, lramp,
 %               : calibres entre le CM et le CP 
 %       - T     : shear values at query points and query times
 %       - M     : flexion values at query points and query times
-
+K=R.k;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Global simulation variables
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,7 +69,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, V0, tfin, phi0, lramp,
     
     % launch
     x0_launch = [0, 0, 0, 0, phi0, 0];
-    [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, 0), tspan_launch, x0_launch, options_launch);
+    [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, R.k, 0), tspan_launch, x0_launch, options_launch);
     display('Cleared launch pad:');
     display(['t = ' num2str(tsim_launch(end)) ' sec']);
     display(['Z = ' num2str(Xsim_launch(end, 2)) ' m']);
@@ -77,7 +77,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, V0, tfin, phi0, lramp,
     
     % propulsed flight
     tspan_flight_withFt = [tsim_launch(end), R.Motor.ThrustCurve(end,1)];
-    [tsim_flight_withFt, Xsim_flight_withFt] = ode45(@(t, x) stateEquation(t, x, R, V0, 1), tspan_flight_withFt, Xsim_launch(end, :), options_flight);
+    [tsim_flight_withFt, Xsim_flight_withFt] = ode45(@(t, x) stateEquation(t, x, R, V0, R.k, 1), tspan_flight_withFt, Xsim_launch(end, :), options_flight);
     display('Motor burnout:');
     display(['t = ' num2str(tsim_flight_withFt(end)) ' sec']);
     display(['Z = ' num2str(Xsim_flight_withFt(end, 2)) ' m']);
@@ -85,7 +85,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, V0, tfin, phi0, lramp,
     
     % coasting
     tspan_flight_withOutFt = [R.Motor.ThrustCurve(end,1), tfin];
-    [tsim_flight_withOutFt, Xsim_flight_withOutFt] = ode45(@(t, x) stateEquation(t, x, R, V0, 2), tspan_flight_withOutFt, Xsim_flight_withFt(end, :), options_flight);
+    [tsim_flight_withOutFt, Xsim_flight_withOutFt] = ode45(@(t, x) stateEquation(t, x, R, V0, R.k, 2), tspan_flight_withOutFt, Xsim_flight_withFt(end, :), options_flight);
     display('Apogee:');
     display(['t = ' num2str(tsim_flight_withOutFt(end)) ' sec']);
     display(['Z = ' num2str(Xsim_flight_withOutFt(end, 2)) ' m']);
@@ -226,7 +226,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, V0, tfin, phi0, lramp,
         
             X_dot   = Vx;
             Z_dot   = Vz;
-            V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
+            V_dot   = Q*(Force_T+Force_N+Force_D+Force_G) - m_dot*[Vx; Vz])/m;
             Vx_dot  = V_dot(1);
             Vz_dot  = V_dot(2);
             phi_dot = phi_dot;
