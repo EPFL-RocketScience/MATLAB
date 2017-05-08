@@ -2,9 +2,9 @@
 
 close all;
 clear all;
+clc%efface le ternminal
 
 R = RocketJuju();
-K = 1.1; % coefficient correctif de force aerodynamique normale
 
 % Plot stuff
 t = linspace(0, max([R.Motor.bt])+15, 100);
@@ -36,7 +36,7 @@ xlabel('t [s]');
 alpha = linspace(-30, 30, 100)*pi/180;
 figure
 for alpha_i = 1:length(alpha)
-   [CNa(alpha_i), zCP(alpha_i)] = R.aeroCoeff(alpha(alpha_i), 0, 0, K); 
+   [CNa(alpha_i), zCP(alpha_i)] = R.aeroCoeff(alpha(alpha_i), 0, 0); 
 end
 subplot(2,1,1)
 plot(alpha*180/pi, CNa.*alpha);
@@ -57,7 +57,7 @@ phi0 = 0;
 tquer = [1 3 5 7 8];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
 L_ramp = 2;
-[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, 10, K, tfin, phi0, L_ramp, tquer, xquer);
+[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, 10, tfin, phi0, L_ramp, tquer, xquer);
 
 figure;hold on;
 title('Altitude')

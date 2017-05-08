@@ -1,4 +1,4 @@
-function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lramp, tquer, xquer)
+function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, tfin, phi0, lramp, tquer, xquer)
 %SIMULATE effectue la simulation de la fusee
 %   INPUTS :
 %       - R     : objet 'Rocket'
@@ -18,7 +18,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
 %               : calibres entre le CM et le CP 
 %       - T     : shear values at query points and query times
 %       - M     : flexion values at query points and query times
-
+K=R.k;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Global simulation variables
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,7 +69,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
     
     % launch
     x0_launch = [0, 0, 0, 0, phi0, 0];
-    [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, K, 0), tspan_launch, x0_launch, options_launch);
+    [tsim_launch, Xsim_launch] = ode45(@(t, x) stateEquation(t, x, R, 0, R.k, 0), tspan_launch, x0_launch, options_launch);
     display('Cleared launch pad:');
     display(['t = ' num2str(tsim_launch(end)) ' sec']);
     display(['Z = ' num2str(Xsim_launch(end, 2)) ' m']);
@@ -176,7 +176,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
             alpha_tmp = atan2(cr(3),dot(a,-Vi));
         end
         % coefficient de force normale et position du centre de pouss?e
-        [CNa, CP] = R.aeroCoeff(alpha_tmp, Mach, theta, K);
+        [CNa, CP] = R.aeroCoeff(alpha_tmp, Mach, theta);
         % force normale
         N = 0.5*rho*norm(Vi)^2*Aref*CNa*alpha_tmp;
         % force de train?e

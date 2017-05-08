@@ -12,7 +12,6 @@ bt = 2.37; % burn time
 
 % Create a rocket
 R = Rocket();
-
 % nose(L, D, e, rho)
 R.nose(0.42, 0.102, 0.0022, rho_polystyr);
 % stage(id, z, L, Dout, e, rho)
