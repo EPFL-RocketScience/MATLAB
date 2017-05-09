@@ -5,6 +5,7 @@ clear all;
 clc%efface le ternminal
 
 R = RocketJuju();
+%E = Environment();
 
 % Plot stuff
 t = linspace(0, max([R.Motor.bt])+15, 100);
@@ -57,7 +58,8 @@ phi0 = 0;
 tquer = [1 3 5 7 8];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
 L_ramp = 2;
-[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, 10, tfin, phi0, L_ramp, tquer, xquer);
+v_vent = 10;
+[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, v_vent, tfin, phi0, L_ramp, tquer, xquer);
 
 figure;hold on;
 title('Altitude')
