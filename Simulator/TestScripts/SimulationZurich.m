@@ -1,4 +1,4 @@
-function E = EnvironmentZurich()
+function S = SimulationZurich()
 % Environment de zurich
 %   Iinitalisation des variable
     tfin = 11;
@@ -9,11 +9,11 @@ function E = EnvironmentZurich()
     v_vent = 10;
     
     %create a envirnment
-    E = Environment();
+    S = Simulation();
     %initiat environement
-    inititEnvironment(E, L_ramp, phi0, tfin, tquer, xquer, v_vent);
+    inititSimulation(S, L_ramp, phi0, tfin, tquer, xquer, v_vent);
     %Afficher environment
-    E.printSpecs();
+    S.printSpecs();
     
 end
 

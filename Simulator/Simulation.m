@@ -1,4 +1,4 @@
-classdef Environment < matlab.System
+classdef Simulation < matlab.System
     % 
 
     properties(SetAccess = public, GetAccess = public)
@@ -12,15 +12,15 @@ classdef Environment < matlab.System
     end
 
     methods(Access = public)
-        function obj =  Environment()
-            % Environment
-            % Constructor of Environment, empty for now
+        function obj =  Simulation()
+            % Simulation
+            % Constructor of Simulation, empty for now
         end
     end
     methods
-        function inititEnvironment(obj, L_ramp, phi0, tfin, tquer, xquer, v_vent)
-            % inititEnvironment
-            % Initialise l'environnement
+        function inititSimulation(obj, L_ramp, phi0, tfin, tquer, xquer, v_vent)
+            % inititSimulation
+            % Initialise la simulation
             % INPUTS
             %   - L-ramp    : Longueur de la rampe de lancement
             %   - pho0      : Angle de la rampe de lancement par rapport à la verticale 
