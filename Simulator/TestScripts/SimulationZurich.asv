@@ -1,7 +1,6 @@
 function S = SimulationZurich( R)
 % Environment de Zurich
-% INPUT
-%   - R     : Rocket
+% I
 
 
 %   Iinitalisation des variable
@@ -24,9 +23,9 @@ function S = SimulationZurich( R)
     %   Figure9     : Flexion load
     Figure1 = false;  
     Figure2 = true;  
-    Figure3 = false;
+    Figure3 = true;
     Figure4 = true;
-    Figure5 = false;
+    Figure5 = true;
     Figure6 = true;
     Figure7 = true;
     Figure8 = true;

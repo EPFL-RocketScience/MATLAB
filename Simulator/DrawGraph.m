@@ -1,8 +1,21 @@
-function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M, G)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
+% DrawGraph
+%   Affiche la serie de graphe selon l'envie de l'utilisateur. Le choix est
+%   dans l'INPUT S.G(i)
+%   INPUTS :
+%       - tsim  : etapes de temps d'integration
+%       - Xsim  : etat du system a chaque etape
+%       - R     : objet 'Rocket'
+%       - S     : objet 'Simulation'
+%       - alpha : angle d'attaque
+%       - calibre 
+%               : calibres entre le CM et le CP 
+%       - T     : shear values at query points and query times
+%       - M     : flexion values at query points and query times
+%   OUTPUTS :
+%       - A     : Ne retourne rien
     
-   % Plot stuff
+    if S.G(1) == true
     t = linspace(0, max([R.Motor.bt])+15, 100);
     for it = 1:length(t) 
        mass(it) = R.m(t(it));
@@ -28,7 +41,9 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M, G)
     plot(R.Motor.ThrustCurve(1:end-1,1), R.Motor.ThrustCurve(1:end-1,2));  
     ylabel('Ft [N]');
     xlabel('t [s]');
-
+    end % fin du if 1
+    
+    if S.G(2) == true
     alphaAvantSimu = linspace(-30, 30, 100)*pi/180;
     figure
     for alpha_i = 1:length(alphaAvantSimu)
@@ -44,16 +59,21 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M, G)
     ylabel('zCP [m]');
     grid on;
     xlabel('alpha [^\circ]');
-
+    end % fin du if2
+    
+    if S.G(3) == true
     drawRocket(R);
-
-    %*****************************************************
+    end % fin du if 3
+    
+    if S.G(4) == true
     figure;hold on;
     title('Altitude')
     plot(tsim, Xsim(:,2));
     xlabel('t [s]');
     ylabel('z [m]');
-
+    end % end if 4
+    
+    if S.G(5) == true
     figure; hold on;
     title('Rocket Trajectory')
     plot(Xsim(:,1), Xsim(:,2));
@@ -63,31 +83,40 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M, G)
     quiver(Xsim(1:100:end,1), Xsim(1:100:end,2), 0.001*sin(Xsim(1:100:end, 5)), 0.001*cos(Xsim(1:100:end, 5)));
     xlabel('horizontal distance from launchpad');
     ylabel('vertical altitude');
-
+    end % end if 5
+    
+    if S.G(6) == true
     figure; hold on;
     title('Rocket angle');
     plot(tsim, Xsim(:,5));
     xlabel('t [s]');
     ylabel('\phi [rad]');
-
+    end % end if 6
+    
+    if S.G(7) == true
     figure; hold on;
     title('Angle of attack');
     plot(tsim, alpha);
     xlabel('t [s]');
     ylabel('\alpha [rad]');
-
+    end % end if 7
+    
+    if S.G(8) == true
     figure; hold on;
     title('Stabiltie statique lors du vol');
     plot(tsim, calibre);
     xlabel('t [s]');
     ylabel('Calibre [-]');
+    end % end if 8
 
+    if S.G(9) == true
     figure; hold on;
     title('Flexion load');
     plot(S.xquer, M);
     legend(['t = ' num2str(S.tquer(1))], ['t = ' num2str(S.tquer(2))], ['t = ' num2str(S.tquer(3))], ['t = ' num2str(S.tquer(4))], ['t = ' num2str(S.tquer(5))])
     xlabel('x [m]');
     ylabel('M(x) [Nm]');
+    end % end if 9
 
 end
 

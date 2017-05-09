@@ -1,24 +1,12 @@
 classdef Simulation < matlab.System
     % Simulation
-    %  
     %       - V0    : vitesse du vent [m/s]
     %       - tfin  : temps de simulation maximal
     %       - phi0  : angle de d?part de la rampe en [rad]
-    %       - l_ramp: longueure de la rampe de lancement [m]
+    %       - l_ramp : longueure de la rampe de lancement [m]
     %       - tquer : times at which special calculations should be done (flexion)
     %       - xquer : positions along rocket where special calculation values
-    %                 are requested
-    %       - G     : Choix des graphes à afficher :
-    %   Figure1     : Mass properties
-    %   Figure2     : Aerodynamic properties at M = 0 & \theta = 0
-    %   Figure3     : Drawing of the rocket with CM and CP
-    %   Figure4     : Altitude
-    %   Figure5     : Rocket Trajectory
-    %   Figure6     : Rocket angle
-    %   Figure7     : Angle of attack
-    %   Figure8     : Stabiltie statique lors du vol
-    %   Figure9     : Flexion load
-    
+    %                 are requested.
 
     properties(SetAccess = public, GetAccess = public)
         L_ramp
@@ -57,7 +45,8 @@ classdef Simulation < matlab.System
             obj.tquer = tquer;
             obj.xquer = xquer; 
             obj.v_vent = v_vent;
-            obj.G = [ 0 0 0 0 0 0 0 0 0];%Dessin des graphes
+            
+            obj.G = [ 1 1 1 1 1 1 1 1 1];%Dessin des graphes
         end
         
         function setGraph(obj, G)

@@ -9,7 +9,6 @@ data = load('AeroTech_H123W.mat');
 thrustCurve = cleanThrustCurve(data.data);
 bt = 2.37; % burn time
 
-
 % Create a rocket
 R = Rocket();
 % nose(L, D, e, rho)
