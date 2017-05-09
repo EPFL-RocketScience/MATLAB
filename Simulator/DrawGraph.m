@@ -16,7 +16,8 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
 %       - M     : flexion values at query points and query times
 %   OUTPUTS :
 %       - A     : Ne retourne rien
-    
+
+    %Valeur des certain point
     i_burnout = min(find(tsim>R.Motor.bt));%Permet d'avoir l'indice de fin du moteur
     i_finSim = max(find(Xsim(:,2)));
     

@@ -2,12 +2,14 @@ function S = SimulationZurich( R)
 % Environment de Zurich
 % INPUT
 %   - R     : Rocket
+%   - v_vent: un vent positif va de gauche à droite
+%                     negatif va de droite à gauche
 
 
 %   Iinitalisation des variable
     tfin = 11;
-    phi0 = 2*pi/360*45;
-    v_vent = 10;
+    phi0 = 2*pi/360*0;
+    v_vent = -10;
     tquer = [1 3 5 7 8];
     xquer = linspace(0, R.Tail.z + R.Tail.L, 10);%Pas JOLI DE REMPRENDRE R ICI
     L_ramp = 2;

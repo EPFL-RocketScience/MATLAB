@@ -53,6 +53,10 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
     options_flight = odeset('Events', @events_flight, 'OutputFcn', @output,...
                      'Refine', 1);
    
+                 
+   % integrator options flight with parachute
+    options_flight_withPara = odeset('Events', @events_flight_withPara, 'OutputFcn', @output,...
+                     'Refine', 1);
     
     %%%%%%%%%%%%%%%%%%%%%%%%         
     % integration
@@ -84,6 +88,11 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
     display(['Z = ' num2str(Xsim_flight_withOutFt(end, 2)) ' m']);
     display(['V = ' num2str(Xsim_flight_withOutFt(end, 4)) ' m/s']);
     
+    %parachute
+%     tspan_flight_withPara = [tsim_flight_withOutFt(end), 60];
+%     [tsim_flight_withPara, Xsim_flight_withPara] = ode45(@(t, x) stateEquation(t, x, R, S, 3), tspan_flight_withPara, Xsim_flight_withOutFt(end, :), options_flight_withPara);
+    
+    
     
     %%%%%%%%%%%%%%%
     % output
@@ -91,6 +100,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
     
     tsim = [tsim_launch; tsim_flight_withFt; tsim_flight_withOutFt];
     Xsim = [Xsim_launch; Xsim_flight_withFt; Xsim_flight_withOutFt];
+     
+%     tsim = [tsim_launch; tsim_flight_withFt; tsim_flight_withOutFt; tsim_flight_withPara];
+%     Xsim = [Xsim_launch; Xsim_flight_withFt; Xsim_flight_withOutFt; Xsim_flight_withPara];
     
     
     %%%%%%%%%%%%%%%%%%
@@ -233,6 +245,20 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
             Vz_dot  = V_dot(2);
             phi_dot = phi_dot;
             phi_ddot= -((N+D*sin(alpha_tmp))*(CP-CM)+sin(epsilon)*Ft*(L-CM)+Ir_dot*phi_dot)/Ir;
+            
+%         elseif phase == 3
+%             
+%                 
+%             X_dot   = Vx;
+%             Z_dot   = Vz;
+%             %Drag du parachute
+%             F_parachute = [0; 1.5  * Z_dot^2 * rho/2 * ((1)/2)^2*pi];
+%             %R.parachute.Cd
+%             V_dot   = (Q*(Force_N+Force_D+Force_G-F_parachute) - m_dot*[Vx; Vz])/m;
+%             Vx_dot  = V_dot(1);
+%             Vz_dot  = V_dot(2);
+%             phi_dot = phi_dot;
+%             phi_ddot= 0;
 
         end
 
@@ -289,6 +315,16 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
         value = [0, 0, 0, Vz, 0, 0];
         isterminal = [0, 0, 0, 1, 0, 0];
         direction = [0, 0, 0, -1, 0, 0];
+        
+    end
+
+    function [value, isterminal, direction] = events_flight_withPara(tsim, Xsim)
+        % fonction qui detecte le sol
+        
+        Xz = Xsim(2);
+        value = [0, Xz, 0, 0, 0, 0];
+        isterminal = [0, 1, 0, 0, 0, 0];
+        direction = [0, -1, 0, 0, 0, 0];
         
     end
 end
