@@ -98,11 +98,11 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
     %%%%%%%%%%%%%%%%%%
     
     function deriv = stateEquation(t, x, R, S, phase)
-    % deriv = stateEquation(t, x, R, V0, K) Equation d'etat pour
+    % deriv = stateEquation(t, x, R, S, phase) Equation d'etat pour
     % l'integration
 
 
-        % definition des variables a int?grer
+        % definition des variables a integrer
         X = x(1);       % position horizontale dans le repere terrestre
         Z = x(2);       % position verticale dans le rep?re terrestre
         Vx = x(3);

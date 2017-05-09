@@ -2,8 +2,6 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
 % DrawGraph
 %   Affiche la serie de graphe selon l'envie de l'utilisateur. Le choix est
 %   dans l'INPUT S.G(i)
-%   Notice : Color star in red is the end of the thrust
-%            Color star in blue is the maximum hight
 %   INPUTS :
 %       - tsim  : etapes de temps d'integration
 %       - Xsim  : etat du system a chaque etape
@@ -18,9 +16,8 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
 %       - A     : Ne retourne rien
     
     i_burnout = min(find(tsim>R.Motor.bt));%Permet d'avoir l'indice de fin du moteur
-    i_finSim = max(find(Xsim(:,2)));
-    
-    
+    i_finSim = max(find
+
     if S.G(1) == true
     t = linspace(0, max([R.Motor.bt])+15, 100);
     for it = 1:length(t) 
@@ -75,7 +72,6 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
     figure;hold on;
     title('Altitude')
     plot(tsim(i_burnout,1), Xsim(i_burnout,2), '*r');
-    plot(tsim(i_finSim,1), Xsim(i_finSim,2), '*b');
     plot(tsim, Xsim(:,2));
     xlabel('t [s]');
     ylabel('z [m]');
@@ -85,8 +81,8 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
     figure; hold on;
     title('Rocket Trajectory')
     plot(Xsim(:,1), Xsim(:,2));
+    i_burnout = min(find(tsim>R.Motor.bt));
     plot(Xsim(i_burnout,1), Xsim(i_burnout,2), '*r');
-    plot(Xsim(i_finSim,1), Xsim(i_finSim,2), '*b');
     daspect([1 1 1]);
     quiver(Xsim(1:100:end,1), Xsim(1:100:end,2), 0.001*sin(Xsim(1:100:end, 5)), 0.001*cos(Xsim(1:100:end, 5)));
     xlabel('horizontal distance from launchpad');
@@ -96,8 +92,6 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
     if S.G(6) == true
     figure; hold on;
     title('Rocket angle');
-    plot(tsim(i_burnout,1), Xsim(i_burnout,5), '*r');
-    plot(tsim(i_finSim,1), Xsim(i_finSim,5), '*b');
     plot(tsim, Xsim(:,5));
     xlabel('t [s]');
     ylabel('\phi [rad]');
@@ -106,8 +100,6 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
     if S.G(7) == true
     figure; hold on;
     title('Angle of attack');
-    plot(tsim(i_burnout,1), alpha(i_burnout), '*r');
-    plot(tsim(i_finSim,1), alpha(i_finSim), '*b');
     plot(tsim, alpha);
     xlabel('t [s]');
     ylabel('\alpha [rad]');
@@ -116,8 +108,6 @@ function A = DrawGraph( tsim, Xsim, R, S, alpha, calibre, T, M)
     if S.G(8) == true
     figure; hold on;
     title('Stabiltie statique lors du vol');
-    plot(tsim(i_burnout,1), calibre(i_burnout), '*r');
-    plot(tsim(i_finSim,1), calibre(i_finSim), '*b');
     plot(tsim, calibre);
     xlabel('t [s]');
     ylabel('Calibre [-]');

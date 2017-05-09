@@ -102,7 +102,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
     % l'integration
 
 
-        % definition des variables a int?grer
+        % definition des variables a integrer
         X = x(1);       % position horizontale dans le repere terrestre
         Z = x(2);       % position verticale dans le rep?re terrestre
         Vx = x(3);

@@ -6,7 +6,7 @@ function S = SimulationZurich( R)
 
 %   Iinitalisation des variable
     tfin = 11;
-    phi0 = 0;
+    phi0 = 2*pi/360*45;
     v_vent = 10;
     tquer = [1 3 5 7 8];
     xquer = linspace(0, R.Tail.z + R.Tail.L, 10);%Pas JOLI DE REMPRENDRE R ICI
@@ -23,10 +23,10 @@ function S = SimulationZurich( R)
     %   Figure8     : Stabiltie statique lors du vol
     %   Figure9     : Flexion load
     Figure1 = false;  
-    Figure2 = true;  
+    Figure2 = false;  
     Figure3 = false;
     Figure4 = true;
-    Figure5 = false;
+    Figure5 = true;
     Figure6 = true;
     Figure7 = true;
     Figure8 = true;
