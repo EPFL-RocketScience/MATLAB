@@ -1,13 +1,20 @@
 classdef Simulation < matlab.System
-    % 
+    % Simulation
+    %       - V0    : vitesse du vent [m/s]
+    %       - tfin  : temps de simulation maximal
+    %       - phi0  : angle de d?part de la rampe en [rad]
+    %       - l_ramp : longueure de la rampe de lancement [m]
+    %       - tquer : times at which special calculations should be done (flexion)
+    %       - xquer : positions along rocket where special calculation values
+    %                 are requested.
 
     properties(SetAccess = public, GetAccess = public)
         L_ramp
         phi0
+        v_vent
         tfin
         tquer
         xquer
-        v_vent
         
     end
 
@@ -18,15 +25,16 @@ classdef Simulation < matlab.System
         end
     end
     methods
-        function inititSimulation(obj, L_ramp, phi0, tfin, tquer, xquer, v_vent)
+        function inititSimulation(obj, L_ramp, phi0,  v_vent, tfin, tquer, xquer)
             % inititSimulation
             % Initialise la simulation
             % INPUTS
-            %   - L-ramp    : Longueur de la rampe de lancement
+            %   - L_ramp    : Longueur de la rampe de lancement
             %   - pho0      : Angle de la rampe de lancement par rapport à la verticale 
             %   - tfin      : Temps de fin de la simulation au maximum
-            %   - tquer     :
-            %   - xquer     : 
+            %   - tquer     : times at which special calculations should be done (flexion)
+            %   - xquer     : positions along rocket where special calculation values
+            %                 are requested
             %   - v_vent    : Vitesse du vent
             
             % Assignation des proprietes
@@ -40,7 +48,7 @@ classdef Simulation < matlab.System
         end
         
         function printSpecs(obj)
-           % affiche les specs de l'environment
+           % affiche les specs de l environment
            
            display('*********************');
            display('Environment Specifications');

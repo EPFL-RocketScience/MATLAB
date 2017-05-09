@@ -92,6 +92,6 @@ ylabel('Calibre [-]');
 figure; hold on;
 title('Flexion load');
 plot(S.xquer, M);
-legend(['t = ' num2str(S.tquer(1))], ['t = ' num2str(S.tquer(2))], ['t = ' num2str(S.tquer(3))], ['t = ' num2str(S.tquer(4))], ['t = ' num2str(S.tquer(5))])
+legend(['t = ' num2str(S.tquer(1))], ['t = ' num2str(S.tquer(2))], ['t = ' num2str(tquer(3))], ['t = ' num2str(tquer(4))], ['t = ' num2str(tquer(5))])
 xlabel('x [m]');
 ylabel('M(x) [Nm]');
