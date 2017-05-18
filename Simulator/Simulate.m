@@ -186,7 +186,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate(R, S)
         N = 0.5*rho*norm(Vi)^2*Aref*CNa*alpha_tmp;
         % force de trainee
         CD = 0.85; % TODO: define CD
-        D = 0.5*rho*norm(Vi)^2*Aref*CD;
+        D =  0.5*rho*norm(Vi)^2*Aref*CD;
 
         % Proprietes du moteur
         if(t<R.Motor.ThrustCurve(1,1))

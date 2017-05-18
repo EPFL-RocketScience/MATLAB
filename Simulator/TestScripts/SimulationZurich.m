@@ -26,7 +26,7 @@ function S = SimulationZurich( R)
     %   Figure9     : Flexion load
     Figure1 = false;  
     Figure2 = false;  
-    Figure3 = false;
+    Figure3 = true;
     Figure4 = true;
     Figure5 = true;
     Figure6 = true;
