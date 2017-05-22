@@ -20,12 +20,12 @@ data = load('Thrust_Curves/Aerotech_H123W.mat');    % Thrust Curve data Tdat(:,1
 TC = data.data;
 TC = TC(find(~isnan(TC(:,2))), :);
 
-xt = 250; % target
+xt = 200; % target
 
 [Z2, X10, V10, qual, err, err_max] = brakeMatrix( m0, mp, D, Arefb, Cd0, Cdb, TC, BT, xt);
 
 display('Quality of deployment matrix:');
-display([num2str(qual) '% unreachable values']);
+display([num2str(100*qual) '% unreachable values']);
 
 figure; hold on;
 title(['Z2 : deployment altitudes for target = ' num2str(xt) ' m']);

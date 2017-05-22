@@ -57,7 +57,7 @@ phi0 = 0;
 tquer = [1 3 5 7 8];
 xquer = linspace(0, R.Tail.z + R.Tail.L, 10);
 L_ramp = 2;
-[tsim, Xsim, alpha, calibre, T, M] = Simulate( R, 10, K, tfin, phi0, L_ramp, tquer, xquer);
+[tsim, Xsim, alpha, calibre, T, M, F_lat] = Simulate( R, 10, K, tfin, phi0, L_ramp, tquer, xquer);
 
 figure;hold on;
 title('Altitude')

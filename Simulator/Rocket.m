@@ -83,7 +83,9 @@ classdef Rocket < handle
             R2 = D2/2;
             m = (R2-R1)/L;
             obj.Tail.Iz = pi*rho/(10*m)*((R2^5-R1^5)-((R2-e)^5-(R1-e)^5));
-            obj.Tail.Ir = obj.Tail.Iz/2 + pi*rho*((m^2*L^5/5+1/2*m*L^4*R1+R1^2*L^3/3)-(m^2*L^5/5+1/2*m*L^4*(R1-e)+(R1-e)^2*L^3/3));
+            %obj.Tail.Ir = obj.Tail.Iz/2 + pi*rho*((m^2*L^5/5+1/2*m*L^4*R1+R1^2*L^3/3)-(m^2*L^5/5+1/2*m*L^4*(R1-e)+(R1-e)^2*L^3/3));
+            obj.Tail.Ir = obj.Tail.Iz/2 + pi*rho*((1/2*m*L^4*e+(R1^2-(R1-e)^2)*L^3/3));            
+            
             
             % Calcule des proprietes aerodynamiques
             obj.Tail.CNa = @(alpha) 2/obj.d^2*(D2^2-D1^2)*(sin(alpha)/(alpha*(alpha~=0)+(alpha==0))*(alpha~=0)+(alpha==0)); % d?riv?e du coefficient aerodynamique normal
@@ -179,16 +181,16 @@ classdef Rocket < handle
                                 + pi*rho_prop*L/2*((D/2-e)^4-(Din(t))^4);
                 motor.Ir = @(t) pi*rho_shell*L/12*(3*((D/2)^4-(D/2-e)^4)...
                                 + L^2*((D/2)^2-(D/2-e)^2))...
-                                + pi*rho_prop*L/12*(3*((D/2-e)^4-(Din(t))^4)...
-                                + L^2*((D/2-e)^2-(Din(t))^2));
+                                + pi*rho_prop*L/12*(3*((D/2-e)^4-(Din(t)/2)^4)...
+                                + L^2*((D/2-e)^2-(Din(t)/2)^2));
                             
             elseif strcmp(id,'tank')
                 % le reservoir se vide de haut en bas. 
                 
-                h = @(t) 4*motor.m(t)/rho/pi/(D-2*e)^2;
-                cm_shell = L/2*(m-mp);
-                cm_prop  = @(t) (L - h/2)*(motor.m(t)-m+mp);
-                motor.cm = @(t) cm_shell + cm_prop(t);
+                h = @(t) 4*(motor.m(t)-m+mp)/rho/pi/(D-2*e)^2;
+                cm_shell = L/2;
+                cm_prop  = @(t) L - h(t)/2*(motor.m(t)-m+mp)/mp;
+                motor.cm = @(t) (cm_shell*(m-mp) + cm_prop*(motor.m(t)-m+mp))/motor.m(t);
                 motor.Iz = @(t) pi*rho_shell*L/2*((D/2)^4-(D/2-e)^4)...
                                 + pi*rho_prop*h(t)/2*((D/2-e)^4);
                 Ir_shell = pi*rho_shell*L/12*(3*((D/2)^4-(D/2-e)^4)...
@@ -611,7 +613,7 @@ function CNa = cna_fins(N, rt, S, d, Cr, Ct, xt, M, theta)
    if (N == 1)
        CNa = CNa1*sin(theta)^2;
    elseif (N == 2)
-       CNa = CNa1*(sin(theta)^2+sin(theta+180)^2);
+       CNa = CNa1*(sin(theta)^2+sin(theta+pi)^2);
    elseif (N == 3)
        CNa = CNa1*1.5*(1-0.15*cos(3*theta/2));
    elseif (N == 4)

@@ -1,4 +1,4 @@
-function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lramp, tquer, xquer)
+function [tsim, Xsim, alpha, calibre, T, M, F_lat] = Simulate( R, V0, K, tfin, phi0, lramp, tquer, xquer)
 %SIMULATE effectue la simulation de la fusee
 %   INPUTS :
 %       - R     : objet 'Rocket'
@@ -38,6 +38,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
     % initialize shear and flexion matrices
     T = zeros(length(tquer), length(xquer));
     M = zeros(length(tquer), length(xquer));
+    %force vectors
+    F_lat_tmp = [0,0];
+    F_lat = [0;0];
     
     %%%%%%%%%%%%%%%%%%%%%%%%         
     % find start time
@@ -180,7 +183,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         % force normale
         N = 0.5*rho*norm(Vi)^2*Aref*CNa*alpha_tmp;
         % force de train?e
-        CD = 0.85; % TODO: define CD
+        CD = 0.51; % TODO: define CD
         D = 0.5*rho*norm(Vi)^2*Aref*CD;
 
         % Proprietes du moteur
@@ -205,6 +208,8 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
         Force_N = [N;0];
         Force_D = [sin(alpha_tmp); -cos(alpha_tmp)]*D;
         Force_G = [sin(phi); -cos(phi)]*m*g;
+        
+        F_lat_tmp = [Force_N(1); Force_D(1)];
 
         % Equation d'etat
         
@@ -216,7 +221,7 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
             X_dot   = Vx;
             Z_dot   = Vz;
             V_dot   = (Q*(Force_T+Force_N+Force_D+Force_G-Force_R) - m_dot*[Vx; Vz])/m;
-            Vx_dot  = V_dot(1);
+              Vx_dot  = V_dot(1);
             Vz_dot  = V_dot(2);
             phi_dot = 0;
             phi_ddot= 0;
@@ -263,6 +268,9 @@ function [tsim, Xsim, alpha, calibre, T, M] = Simulate( R, V0, K, tfin, phi0, lr
             % calculate angle of attack
             alpha(end+1) = alpha_tmp;
             calibre(end+1) = calibre_temp;
+            
+            % lateral force
+            F_lat = [F_lat, F_lat_tmp];
             
             % calculate flexion
             if(tquer_i<=length(tquer) & t>=tquer(tquer_i))
