@@ -19,6 +19,7 @@ function Results = Simulate(R, S)
     Vx_dot = 0;
     Vz_dot = 0;
     Vx_dot_out = [];
+    Vz_dot_out = [];
     % angle of attack
     alpha_tmp = 0;
     alpha = [];
@@ -99,6 +100,7 @@ function Results = Simulate(R, S)
     Results.flexion.M = M;
     Results.xquer = xquer;
     Results.accel.Vx_dot = Vx_dot_out;
+    Results.accel.Vz_dot = Vz_dot_out;
     
     %%%%%%%%%%%%%%%%%%
     % State Equation
@@ -268,6 +270,7 @@ function Results = Simulate(R, S)
             alpha(end+1) = alpha_tmp;
             calibre(end+1) = calibre_temp;
             Vx_dot_out = [Vx_dot_out, Vx_dot];
+            Vz_dot_out = [Vz_dot_out, Vz_dot];
             
             % calculate flexion
             if(tquer_i<=length(S.tquer) & t>=S.tquer(tquer_i))

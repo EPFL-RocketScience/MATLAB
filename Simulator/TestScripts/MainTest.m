@@ -13,3 +13,5 @@ results = Simulate( R, S);
 
 % DrawGraphs
 DrawGraph(R, S, results);
+
+Abaqus_Analysis(20,10,0.2,max(abs(results.accel.Vz_dot)),R);
