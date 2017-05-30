@@ -4,19 +4,19 @@ close all
 
 % System variables
 Cd = 0.55;       % estimated drag coefficient
-mi = 2.264;        % initial mass [kg]
-mp = 0.345;     % propellant mass
+mi = 27.765;        % initial mass [kg]
+mp = 7.183;     % propellant mass
 mf = mi-mp;     % final mass
-bt = 10;        % burn time [s]
-S = pi*(0.15)^2/4;   % exposed section [m^2]
+bt = 5.4;        % burn time [s]
+S = pi*(0.17)^2/4;   % exposed section [m^2]
 
 % Sim parameters
-tSpan = [0, 15];
+tSpan = [0, 30];
 x0 = [0;0];
 
-data = load('Thrust_Curves/HyperTEK_Mgrain.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
+data = load('Thrust_Curves/Aerotech_N2220.mat');    % Thrust Curve data Tdat(:,1) = time [s], Tdat(:,2) = Thrust [N]
+Tdat = data.data;
 %Tdat = data.Tdat;
-Tdat = data.Tdat;
 Tdat = Tdat(find(~isnan(Tdat(:,2))), :);
 
 % Add values to thrust curve at initial time and final time 
@@ -43,6 +43,14 @@ odefun = @(t, x) xdot_1D(t,x,m, m_dot, Ft, Cd, S);
 display(['Apogee: ' num2str(max(x(:,1) - x0(1))) ' m'])
 display(['Mach max: ' num2str(max(x(:, 2)./a))])
 display(['gmax: ' num2str(max(diff(x(:, 2))./diff(t)/9.8)) ' m/s^2']);
+
+figure
+
+plot(t, x(:, 1)-x0(1));
+title 'Altitude';
+ylabel 'z [m]';
+xlabel 't [s]';
+box off;
 
 figure
 

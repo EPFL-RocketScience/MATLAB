@@ -9,7 +9,7 @@ S = pi*(3*0.0247)^2/4;
 
 %% Get Data
 
-tmp = load('FlightData/VOL_GUILLAUME.mat');
+tmp = load('FlightData/VOL_JULIEN.mat');
 data = tmp.data;
 clear tmp
 
@@ -47,6 +47,12 @@ ay = f_data(7, :);
 
 %% Plot raw data
 figure; hold on;
+title('Altitude vs. time')
+plot(t/1000, h);
+xlabel('t [s]');
+ylabel('h [m]');
+
+figure; hold on;
 title('Acceleration vs. time');
 subplot(3, 1, 1);
 plot(t/1000, az);
@@ -58,6 +64,19 @@ subplot(3, 1, 3);
 plot(t/1000, ay);
 ylabel('a_y');
 xlabel('t');
+
+%% Plot altitude vs. time
+% remove all altitudes lower than initial altitude and after apogee 
+h_i = h(1);
+[~, h_apogee_i] = max(h);
+h_filt_i = find(h>=h_i+2);
+h_filt_i = h_filt_i(find(h_filt_i<h_apogee_i));
+
+figure; hold on;
+title('Altitude vs. time (filtered)')
+plot((t(h_filt_i)-t(h_filt_i(1)))/1000, h(h_filt_i)-h_i);
+xlabel('t [s]');
+ylabel('h [m]');
 
 %% Get deceleration data
 figure;

@@ -21,7 +21,7 @@ function drawRocket(R)
     plot([R.Fins.z R.Fins.z+R.Fins.xt R.Fins.z+R.Fins.xt+R.Fins.Ct R.Fins.z+R.Fins.Cr R.Fins.z],...
          -1*[R.Fins.r R.Fins.r+R.Fins.S  R.Fins.r+R.Fins.S            R.Fins.r           R.Fins.r], 'k');
     
-    [CN, CP] = R.aeroCoeff(0,0,0,0);
+    [CN, CP] = R.aeroCoeff(0,0,0);
     % cp
     plot(CP, 0, 'ro');
     % cm 

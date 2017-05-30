@@ -7,10 +7,16 @@ classdef Rocket < handle
         Fins
         Motor
         Cylinder
+        Coupler
         Parachute
         Point
         
-        d = 0; % dim?tre de r?f?rence ? la base du c?ne
+        d = 0; % dimetre de reference a la base du cone
+    end
+    
+    properties (SetAccess = public, GetAccess = public)
+        k = 1.1; % coefficient de correction des corps de r?volution portants
+        CD = 0.8; % coefficient de frottement aerodynamique
     end
     
     methods
@@ -62,7 +68,7 @@ classdef Rocket < handle
             % D2    :   diametre du bas
             % L     :   longueur du tail
             % e     :   epaisseur de paroie
-            % z     :   postion par rapport au haut de la fus?e du haut du tail
+            % z     :   postion par rapport au haut de la fusee du haut du tail
             % rho   :   densite
             
             % Assignation des proprietes
@@ -100,7 +106,7 @@ classdef Rocket < handle
             % Calcule la masse, le centre de masse, le centre de pression,
             % le coefficient aerodynamique, les moments d'inertie
             % INPUTS
-            %   - id    :   id du payload (string)
+            %   - id    :   id du stage (string)
             %   - z     :   position du haut de la payload
             %   - m     :   masse
             %   - L     :   longueur de l'etage
@@ -117,7 +123,7 @@ classdef Rocket < handle
             stage.rho = rho;
             
             %Calcul intermediaire
-            Din = Dout - e;%Si besoin
+            Din = Dout - 2*e;%Si besoin
             
             % Calcule des proprietes de masse
             %probleme au niveau de l atribution aux differents etages
@@ -133,6 +139,39 @@ classdef Rocket < handle
             stage.zCPBL = L/2;
             
             obj.Stage = [obj.Stage stage];
+        end
+        
+         function coupler(obj, id, z, L, Dout, e, rho)
+            % Coupleur (piece d'assemblage sans proprietes aerodynamiques
+            % Calcule la masse, le centre de masse, le centre de pression,
+            % les moments d'inertie
+            % INPUTS
+            %   - id    :   id du coupleur (string)
+            %   - z     :   position du haut de la payload
+            %   - m     :   masse
+            %   - L     :   longueur de l'etage
+            %   - Dout  :   diametre externe
+            %   - e     :   epaisseur de la coque
+            %   - rho   :   densite 
+            
+            % Assignation des proprietes
+            coupler.id = id; % 
+            coupler.z = z;
+            coupler.L = L;
+            coupler.Dout = Dout;
+            coupler.e = e;
+            coupler.rho = rho;
+            
+            %Calcul intermediaire
+            Din = Dout - 2*e;
+            
+            % Calcule des proprietes de masse
+            coupler.m = rho*pi*L*((Dout/2)^2-(Din/2)^2);
+            coupler.cm = L/2;
+            coupler.Iz = pi*rho*L*1/2*((Dout/2)^4-(Din/2)^4);
+            coupler.Ir = pi*rho*L*1/12*(3*((Dout/2)^4-(Din/2)^4)+L^2*((Dout/2)^2-(Din/2)^2));
+                      
+            obj.Coupler = [obj.Coupler coupler];
         end
         
         function motor(obj, id, z, D, L, e, m, mp, rho, thrustCurve, bt)
@@ -354,6 +393,11 @@ classdef Rocket < handle
     methods (Access = public)
         % rocket property methods
         
+        function setCoeffAero(obj, k)
+           % changer la valeur du coefficient aerodynamique
+           obj.k = k;
+        end
+        
         function m = m(obj, t)
             % calcule de la masse totale
 
@@ -361,8 +405,9 @@ classdef Rocket < handle
             m_stat = obj.Nose.m;
             m_stat = m_stat + sum([obj.Stage.m]);
             m_stat = m_stat + obj.Tail.m;
-            m_stat = m_stat + obj.Fins.m;
+            m_stat = m_stat + obj.Fins.N*obj.Fins.m;
             m_stat = m_stat + sum([obj.Cylinder.m]);
+            m_stat = m_stat + sum([obj.Coupler.m]);
             m_stat = m_stat + sum([obj.Parachute.m]);
             m_stat = m_stat + sum([obj.Point.m]);
 
@@ -383,6 +428,7 @@ classdef Rocket < handle
             cm_stat = cm_stat + obj.Tail.m*(obj.Tail.z+obj.Tail.cm);
             cm_stat = cm_stat + obj.Fins.m*obj.Fins.N*(obj.Fins.z+obj.Fins.cmz);
             cm_stat = cm_stat + sum([obj.Cylinder.m].*([obj.Cylinder.z] + [obj.Cylinder.cm]));
+            cm_stat = cm_stat + sum([obj.Coupler.m].*([obj.Coupler.z] + [obj.Coupler.cm]));
             cm_stat = cm_stat + sum([obj.Parachute.m].*([obj.Parachute.z] + [obj.Parachute.cm]));
             cm_stat = cm_stat + sum([obj.Point.m].*([obj.Point.z] + [obj.Point.cm]));
             
@@ -405,15 +451,14 @@ classdef Rocket < handle
             Iz_stat = Iz_stat + obj.Fins.N*(obj.Fins.Iz +...
                 obj.Fins.m*(2*obj.Fins.cmr*obj.Fins.r+ obj.Fins.r^2));
             % moment calculation
-            
             Iz_stat = Iz_stat + sum([obj.Cylinder.Iz]);
-            
+            Iz_stat = Iz_stat + sum([obj.Coupler.Iz]);
             Iz = Iz_stat + sum(cellfun(@(c) c(t), {obj.Motor.Iz}));
         end
         
         function Ir = Ir(obj, t)
-            % calcule du moment d'inertie perpendiculaire ? l'axe de la
-            % fus?e au centre de masse
+            % calcule du moment d'inertie perpendiculaire a l'axe de la
+            % fusee au centre de masse
             % INPUT:
             %   - t     : temps
             % OUTPUT:
@@ -440,6 +485,10 @@ classdef Rocket < handle
                 (CMt-[obj.Cylinder.z]).^2-(CMt-[obj.Cylinder.z]).*...
                 [obj.Cylinder.cm]));
             
+            Ir = Ir + sum([obj.Coupler.Ir] + [obj.Coupler.m].*(...
+                (CMt-[obj.Coupler.z]).^2-(CMt-[obj.Coupler.z]).*...
+                [obj.Coupler.cm]));
+            
             Ir = Ir + sum([obj.Parachute.m].*(CMt-[obj.Parachute.z]).^2);
             
             Ir = Ir + sum([obj.Point.m].*(CMt-[obj.Point.z]).^2);
@@ -452,23 +501,22 @@ classdef Rocket < handle
                 (CMt-[obj.Motor.z]-Motor_cm).^2);
         end
         
-        function [CNa_tot, zCP] = aeroCoeff(obj, alpha, M, theta, K)
+        function [CNa_tot, zCP] = aeroCoeff(obj, alpha, M, theta)
             % calcule des proprietes aerodynamiques de la fusee
             % INPUT:
             %   - alpha : angle d'attaque (rad)
             %   - M     : nombre de Mach
             %   - theta : angle de rotation des ailerons
-            %   - K     : facteur correctif pour les corps portants
             
             CNa_Nose = obj.Nose.CNa(alpha);
             zCP_Nose = obj.Nose.zCP;
-            CNa_NoseBL = obj.Nose.CNaBL(alpha, K);
+            CNa_NoseBL = obj.Nose.CNaBL(alpha, obj.k);
             
             CNa_Tail = obj.Tail.CNa(alpha);
             zCP_Tail = obj.Tail.zCP+obj.Tail.z;
-            CNa_TailBL = obj.Tail.CNaBL(alpha, K);
+            CNa_TailBL = obj.Tail.CNaBL(alpha, obj.k);
             
-            CNa_StageBL = cellfun(@(c) c(alpha, K), {obj.Stage.CNaBL});
+            CNa_StageBL = cellfun(@(c) c(alpha, obj.k), {obj.Stage.CNaBL});
             zCP_StageBL = [obj.Stage.zCPBL] + [obj.Stage.z];
             
             CNa_Fins = obj.Fins.CNa(M, theta);
@@ -498,6 +546,8 @@ classdef Rocket < handle
                 error('Must define a motor.');            
             elseif(isempty(obj.Cylinder))
                 warning('No Cylinder defined.');
+            elseif(isempty(obj.Coupler))
+                warning('No Coupler defined.');
             elseif(isempty(obj.Parachute))
                 warning('No parachute defined.');
             elseif(isempty(obj.Point))
@@ -518,10 +568,8 @@ classdef Rocket < handle
            display('*********************');
            display('Rocket Specifications');
            display('*********************');
-           
-           % length
-           L = obj.Tail.z + obj.Tail.L;
-           display(['* L    : ' num2str(L) ' [m]']);
+                                 
+           display(['* L    : ' num2str(obj.getLength()) ' [m]']);
            
            % reference diameter
            D = obj.Nose.D;
@@ -541,7 +589,7 @@ classdef Rocket < handle
            
            % static margin
            display('* stabililty margin');
-           [~, zcp] = obj.aeroCoeff(0, 0, 0, 0);
+           [~, zcp] = obj.aeroCoeff(0, 0, 0);
            display(['* ' num2str((zcp-obj.cm(0))/obj.d) ' calibers'])
         end
         
@@ -550,21 +598,26 @@ classdef Rocket < handle
             % meme que getAll_z et getAll_l
             Motor_m = cellfun(@(c) c(t), {obj.Motor.m}); 
             m = [obj.Nose.m, [obj.Stage.m], obj.Tail.m, obj.Fins.m,...
-                Motor_m, [obj.Cylinder.m], [obj.Parachute.m], [obj.Point.m]];
+                Motor_m, [obj.Cylinder.m], [obj.Coupler.m], [obj.Parachute.m], [obj.Point.m]];
         end
         
         function z = getAll_z(obj)
             % retourne toutes les positions dans un ordre arbitraire, mais le
             % meme que getAll_m et getAll_l
             z = [0, [obj.Stage.z], obj.Tail.z, obj.Fins.z,...
-                [obj.Motor.z], [obj.Cylinder.z], [obj.Parachute.z], [obj.Point.z]];
+                [obj.Motor.z], [obj.Cylinder.z], [obj.Coupler.z], [obj.Parachute.z], [obj.Point.z]];
         end
         
         function l = getAll_l(obj)
             % retourne toutes les positions dans un ordre arbitraire, mais le
-            % meme que getAll_m et getAll_l
+            % meme que getAll_m et getAll_z
             l = [obj.Nose.L, [obj.Stage.L], obj.Tail.L, obj.Fins.Cr,...
-                [obj.Motor.L], [obj.Cylinder.L], [obj.Parachute.L], [obj.Point.L]];
+                [obj.Motor.L], [obj.Cylinder.L], [obj.Coupler.L], [obj.Parachute.L], [obj.Point.L]];
+        end
+        
+        function L = getLength(obj)
+            % retourne la longueure de la fusee
+           L = max(obj.getAll_z()+obj.getAll_l()); 
         end
         
     end
