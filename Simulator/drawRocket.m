@@ -28,6 +28,9 @@ function drawRocket(R)
     plot(R.cm(0), 0, '*b');
      
     daspect([1 1 1]);
+    set(gca,'FontSize',30);
+    set(gcf, 'Position', [0, 0, 3840, 2160]);
+    saveas(gcf,'rocket','eps')
 
 end
 
